@@ -37,7 +37,7 @@ list_init(&sleepList);
 >> including the effects of the timer interrupt handler.
 
 Calculate the awake time for thread t.
-Put it in sleeping list and block it.
+Put t in sleeping list and block it.
 Timer interrupt wakes thread t up when the current time is <= awake time. 
 
 >> A3: What steps are taken to minimize the amount of time spent in

@@ -29,11 +29,13 @@ Marco Morelos <mmore019@ucr.edu> <861109791>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-struct list sleepList; // List of sleeping threads
+Add to timer.c:
+  struct list sleepList; // List of sleeping threads
 
-Add to struct thread in thread.h:
-	int64_t awakeTime; // Store thread wake up time
-	struct list_elem sleepElem; // Element of sleepList
+Add to thread.h:
+  in struct thread:
+    int64_t awakeTime; // Store thread wake up time
+    struct list_elem sleepElem; // Element of sleepList
 
 ---- ALGORITHMS ----
 
@@ -42,7 +44,7 @@ Add to struct thread in thread.h:
 
 Calculate the awake time for thread t.
 Put t in sleeping list and block it.
-Timer interrupt wakes thread t up when the current time is <= awake time. 
+Timer interrupt wakes thread t up when the current time is equal to awake time. 
 
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?

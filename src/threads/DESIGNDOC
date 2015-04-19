@@ -37,7 +37,7 @@ list_init(&sleepList);
 >> including the effects of the timer interrupt handler.
 
 Calculate the awake time for thread t.
-Put t in sleeping list and block it.
+Put it in sleeping list and block it.
 Timer interrupt wakes thread t up when the current time is <= awake time. 
 
 >> A3: What steps are taken to minimize the amount of time spent in
@@ -51,8 +51,15 @@ This way we only have to check the first few threads in the beginning of the lis
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
+Any critical sections and nonatomic operations are made mutually exclusive.
+This means that only one thread can pass through that section at a time.
+A semaphore or lock can be put in place so that this happens. 
+
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
+
+Just like the timer_sleep problem, we can place a semaphore or lock to 
+allow only a single thread to move through the section at a time. 
 
 ---- RATIONALE ----
 

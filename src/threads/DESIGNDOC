@@ -159,7 +159,7 @@ a thread decides to donate priority while this function is set in motion.
 timer  recent_cpu    priority   thread
 ticks   A   B   C   A   B   C   to run
 -----  --  --  --  --  --  --   ------
- 0
+ 0    
  4
  8
 12

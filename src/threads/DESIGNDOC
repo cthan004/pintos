@@ -77,7 +77,7 @@ There is no concurrency when interrupt is off.
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
-We chose to used sorted list to minimize time since we only have
+We chose to use sorted list to minimize time since we only have
 to check the first few elements in the beginning of the list.
 This design is superior than looping through the whole list
 and check every threads.
@@ -90,6 +90,18 @@ and check every threads.
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
+Add to thread.c:
+  struct list donorList; // List of donors
+  
+donorList contains threads that are waiting on the lock.
+
+Add to thread.h:
+  in struct thread:
+    struct list_elem donorElem; // Element of donorList
+    struct lock *tLock; // The thread lock
+    
+tLock holds the lock.
 
 >> B2: Explain the data structure used to track priority donation.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a

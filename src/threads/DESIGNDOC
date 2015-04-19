@@ -62,12 +62,15 @@ This way we only have to check the first few threads in the beginning of the lis
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
-We disable interrupts.
+Since timer is an external interrupt,
+we have to disable interrupt to avoid race condition.
+We cannot use other synchronization methods.
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
 
-We disable interrupts.
+We disable interrupts because external interrupt handler cannot sleep.
+There is no concurrency when interrupt is off.
 
 ---- RATIONALE ----
 

@@ -165,6 +165,11 @@ Therefore we have to disable interrupt.
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
+We use list because its implementation is given.
+We use lock when there are race conditions and
+only disable interrupt when other synchonization methods do not work.
+
+
 			  ADVANCED SCHEDULER
 			    (If Attempted)
 			  ==================

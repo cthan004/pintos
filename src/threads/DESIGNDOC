@@ -124,7 +124,7 @@ We make sure that the thread donates its priority recursively downwards
 in the case there are nesting locks. These threads will then 
 run, starting from the bottom and working their way up until the lock is
 released. As each nested lock is released, the threads' priority is reverted
-to the priority it had before it recieved the donation. Once this is done, 
+to the priority it had before it received the donation. Once this is done, 
 the highest priority thread will be able to wake first.
 
 >> B4: Describe the sequence of events when a call to lock_acquire()
@@ -168,7 +168,7 @@ Therefore we have to disable interrupt.
 
 We use list because its implementation is given.
 We use lock when there are race conditions and
-only disable interrupt when other synchonization methods do not work.
+only disable interrupt when other synchronization methods do not work.
 
 
 			  ADVANCED SCHEDULER

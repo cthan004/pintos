@@ -120,20 +120,21 @@ donation upon releasing the lock. Likewise, T2 will follow.
 >> B3: How do you ensure that the highest priority thread waiting for
 >> a lock, semaphore, or condition variable wakes up first?
 
-We make sure that the thread donates its priority to any threads that
-currently hold the lock that it wants. These threads will then 
-run and when the lock is released, their priority is reverted
-to their original values. Once this is done, the highest priority
-thread will be able to progress.
+We make sure that the thread donates its priority recursively downwards
+in the case there are nesting locks. These threads will then 
+run, starting from the bottom and working their way up until the lock is
+released. As each nested lock is released, the threads' priority is reverted
+to the priority it had before it recieved the donation. Once this is done, 
+the highest priority thread will be able to wake first.
 
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
 
 When lock_acquire() is called, the OS checks to see if any lower priority
-threads currently hold the lock. If this is the case, priority
+threads currently holds the lock. If this is the case, priority
 donation occurs so that the lock can be released. This is done 
-recursively downwards so that the correct threads run so that the lock
-can be freed.
+recursively downwards so that, in the case of nested locks, the appropriate
+threads can be run. Until the lock is released, the thread is set to wait.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.

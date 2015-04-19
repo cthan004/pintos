@@ -151,11 +151,14 @@ the thread with the highest priority.
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
-If thread_set_priority() is called but a another thread is also
+If thread_set_priority() is called but another thread is also
 competing to change the priority of this thread, we have a race condition
 where both threads try to change the same piece of information and whichever
 executes last, gets to change the thread's priority. This may happen if
-a thread decides to donate priority while this function is set in motion. 
+a thread decides to donate priority while this function is set in motion.
+
+We cannot use lock on external interrupt handler.
+Therefore we have to disable interrupt.
 
 ---- RATIONALE ----
 

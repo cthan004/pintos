@@ -98,8 +98,8 @@ and check every threads.
 >> a lock, semaphore, or condition variable wakes up first?
 
 We make sure that the thread donates its priority to any threads that
-currently hold the resource that it wants. These threads will then 
-run and when the resource is released, their priority is reverted
+currently hold the lock that it wants. These threads will then 
+run and when the lock is released, their priority is reverted
 to their original values. once this is done, the highest priority
 thread will be able to progress.
 
@@ -107,21 +107,32 @@ thread will be able to progress.
 >> causes a priority donation.  How is nested donation handled?
 
 When lock_acquire() is called, the OS checks to see if any lower priority
-threads currently hold the resource. If this is the case, priority
-donation occurs so that the resource can be released. This is done 
-recursively downwards so that the correct threads run so that the resource
+threads currently hold the lock. If this is the case, priority
+donation occurs so that the lock can be released. This is done 
+recursively downwards so that the correct threads run so that the lock
 can be freed.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
-
+When lock_release() is called, the thread that is currently holding the
+lock releases the lock. The semaphore variable is incremented and another
+thread is allowed in. Since a higher priority thread was waiting for the
+lock, the thread loses its donated priority by being reverted to its
+original priority. The OS then will look at the priority queue and run
+the thread with the highest priority.
 
 ---- SYNCHRONIZATION ----
 
 >> B6: Describe a potential race in thread_set_priority() and explain
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
+
+If thread_set_priority() is called but a another thread is also
+competing to change the priority of this thread, we have a race condition
+where both threads try to change the same piece of information and whichever
+executes last, gets to change the thread's priority. This may happen if
+a thread decides to donate priority while this function is set in motion. 
 
 ---- RATIONALE ----
 

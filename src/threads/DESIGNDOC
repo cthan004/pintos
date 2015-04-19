@@ -77,7 +77,7 @@ There is no concurrency when interrupt is off.
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
-We chose to used sorted list to minimize time since we only have
+We chose to use sorted list to minimize time since we only have
 to check the first few elements in the beginning of the list.
 This design is superior than looping through the whole list
 and check every threads.
@@ -90,6 +90,18 @@ and check every threads.
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
+Add to thread.c:
+  struct list donorList; // List of donors
+  
+donorList contains threads that are waiting on the lock.
+
+Add to thread.h:
+  in struct thread:
+    struct list_elem donorElem; // Element of donorList
+    struct lock *tLock; // The thread lock
+    
+tLock holds the lock.
 
 >> B2: Explain the data structure used to track priority donation.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
@@ -140,17 +152,23 @@ the thread with the highest priority.
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
-If thread_set_priority() is called but a another thread is also
+If thread_set_priority() is called but another thread is also
 competing to change the priority of this thread, we have a race condition
 where both threads try to change the same piece of information and whichever
 executes last, gets to change the thread's priority. This may happen if
-a thread decides to donate priority while this function is set in motion. 
+a thread decides to donate priority while this function is set in motion.
+
+We cannot use lock on external interrupt handler.
+Therefore we have to disable interrupt.
 
 ---- RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
+We use list because its implementation is given.
+We use lock when there are race conditions and
+only disable interrupt when other synchonization methods do not work.
 
 
 			  ADVANCED SCHEDULER

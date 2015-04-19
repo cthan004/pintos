@@ -29,8 +29,12 @@ Marco Morelos <mmore019@ucr.edu> <861109791>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-struct list sleepList;
-list_init(&sleepList);
+struct list sleepList; // List of sleeping threads
+
+Add to struct thread in thread.h:
+	int64_t awakeTime; // Store thread wake up time
+	struct list_elem sleepElem; // Element of sleepList
+
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe what happens in a call to timer_sleep(),

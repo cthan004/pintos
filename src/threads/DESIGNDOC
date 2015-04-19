@@ -72,6 +72,11 @@ allow only a single thread to move through the section at a time.
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
+We chose to used sorted list to minimize time since we only have
+to check the first few elements in the beginning of the list.
+This design is superior than looping through the whole list
+and check every threads.
+
 			 PRIORITY SCHEDULING
 			 ===================
 

@@ -208,6 +208,7 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+  thread_yield_priority();
 
   return tid;
 }
@@ -248,7 +249,6 @@ thread_unblock (struct thread *t)
   list_push_back (&ready_list, &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
-  //thread_yield_priority();
 }
 
 /* Returns the name of the running thread. */
@@ -331,7 +331,7 @@ comp_priority(const struct list_elem *a,
 {
   struct thread *t_a = list_entry(a, struct thread, elem);
   struct thread *t_b = list_entry(b, struct thread, elem);
-  return (t_a->priority > t_b->priority)?1:0;
+  return (t_a->priority < t_b->priority)?1:0;
 }
 
 // Yield to highest thread
@@ -378,7 +378,7 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
-  //thread_yield_priority();
+  thread_yield_priority();
 }
 
 /* Returns the current thread's priority. */
@@ -539,7 +539,7 @@ next_thread_to_run (void)
     return idle_thread;
   else
   {
-    struct list_elem *e = list_min(&ready_list, comp_priority, NULL);
+    struct list_elem *e = list_max(&ready_list, comp_priority, NULL);
     list_remove(e);
     return list_entry(e, struct thread, elem);
   }

@@ -20,7 +20,7 @@
 #endif
 
 // Create a sleeping list
-struct list sleepList;
+static struct list sleepList;
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
@@ -96,7 +96,9 @@ compare_less (const struct list_elem *a,
 	      const struct list_elem *b,
 	      void *aux UNUSED)
 {
-  return (a<b)?1:0;
+  struct thread *t_a = list_entry(a, struct thread, sleepElem);
+  struct thread *t_b = list_entry(b, struct thread, sleepElem);
+  return (t_a->awakeTime < t_b->awakeTime)?1:0;
 }
 
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
@@ -115,14 +117,11 @@ timer_sleep (int64_t ticks)
   enum intr_level old_state;
   old_state = intr_disable();
   // Put t into sleepList
-  //list_push_back(&sleepList, &t->sleepElem);
   list_insert_ordered(&sleepList, &t->sleepElem, compare_less, NULL);
   // Block on t
   thread_block();
   // Restore interrupt
   intr_set_level(old_state);
-  //while (timer_elapsed (start) < ticks) 
-    //thread_yield ();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -203,16 +202,16 @@ timer_interrupt (struct intr_frame *args UNUSED)
   thread_tick ();
   // Look through sleepList
   struct list_elem *e;
+  struct thread *t;
   for (e = list_begin(&sleepList);
        e != list_end(&sleepList); e = list_next(e))
     {
-      struct thread *t = list_entry(e, struct thread, sleepElem);
-      if (t->awakeTime <= timer_ticks())
-        {
-	  thread_unblock(t);
-	  list_remove(&t->sleepElem);
-	}
+      t = list_entry(e, struct thread, sleepElem);
+      if (t->awakeTime > timer_ticks()) break;
+      thread_unblock(t);
+      list_remove(&t->sleepElem);	
     }
+  thread_yield_priority();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

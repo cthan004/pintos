@@ -542,7 +542,6 @@ next_thread_to_run (void)
     struct list_elem *e = list_min(&ready_list, comp_priority, NULL);
     list_remove(e);
     return list_entry(e, struct thread, elem);
-    //return list_entry (list_pop_front (&ready_list), struct thread, elem);
   }
 }
 

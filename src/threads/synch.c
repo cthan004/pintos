@@ -72,6 +72,8 @@ sema_down (struct semaphore *sema)
       thread_block ();
     }
   sema->value--;
+
+  thread_yield_priority();
   intr_set_level (old_level);
 }
 
@@ -113,10 +115,14 @@ sema_up (struct semaphore *sema)
   ASSERT (sema != NULL);
 
   old_level = intr_disable ();
-  if (!list_empty (&sema->waiters)) 
-    thread_unblock (list_entry (list_pop_front (&sema->waiters),
-                                struct thread, elem));
+  if (!list_empty (&sema->waiters))
+  {
+    struct list_elem *e = list_max(&sema->waiters, comp_priority, NULL);
+    list_remove(e);
+    thread_unblock (list_entry(e, struct thread, elem));
+  }
   sema->value++;
+  thread_yield_priority();
   intr_set_level (old_level);
 }
 
@@ -195,9 +201,15 @@ lock_acquire (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
+  
+  enum intr_level old_state = intr_disable();
+  // Add to donorList
+  if (lock->holder != NULL)
+    list_push_back(&lock->holder->donorList,&thread_current()->donorElem);
 
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
+  intr_set_level(old_state);
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -230,9 +242,16 @@ lock_release (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
+  
+  enum intr_level old_state = intr_disable();
+  // Remove donorList
+  if (!list_empty(&thread_current()->donorList))
+    list_remove(&thread_current()->donorElem);
 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
+  intr_set_level(old_state);
+  thread_yield_priority();
 }
 
 /* Returns true if the current thread holds LOCK, false

@@ -93,6 +93,10 @@ struct thread
     // For timer.c
     int64_t awakeTime;
     struct list_elem sleepElem;
+    
+    // For donation
+    struct list donorList;
+    struct list_elem donorElem;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */

@@ -377,8 +377,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  enum intr_level old_state = intr_disable();
   thread_current ()->priority = new_priority;
   thread_yield_priority();
+  intr_set_level(old_state);
 }
 
 /* Returns the current thread's priority. */
@@ -392,7 +394,23 @@ thread_get_priority (void)
 int
 thread_get_eff_prior(struct thread* t)
 {
-  return t->priority;
+  if (list_empty(&t->donorList))
+    return t->priority;
+  else
+  {
+    struct thread *don = list_entry(list_max(&t->donorList,
+					     comp_priority,
+					     NULL),
+				    struct thread, donorElem);
+    //if (t->priority > don->priority)
+      //return t->priority;
+    //else
+      //return don->priority;
+    if (t->priority > thread_get_eff_prior(don))
+      return t->priority;
+    else
+      return thread_get_eff_prior(don);
+  }
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -512,6 +530,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
+
+  list_init(&t->donorList);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

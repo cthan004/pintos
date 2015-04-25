@@ -223,8 +223,7 @@ void
 thread_block (void) 
 {
   ASSERT (!intr_context ());
-  ASSERT (intr_get_level () == INTR_OFF);
-
+  ASSERT (intr_get_level ());
   thread_current ()->status = THREAD_BLOCKED;
   schedule ();
 }
@@ -392,6 +391,8 @@ thread_get_priority (void)
 int
 thread_get_eff_prior(struct thread* t)
 {
+  
+  
   return t->priority;
 }
 
@@ -511,6 +512,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  //t->tLock = NULL;
   list_push_back (&all_list, &t->allelem);
 }
 

@@ -97,6 +97,7 @@ struct thread
     // For donation
     struct list donorList;
     struct list_elem donorElem;
+    struct lock *tLock;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */

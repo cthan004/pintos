@@ -331,7 +331,9 @@ comp_priority(const struct list_elem *a,
 {
   struct thread *t_a = list_entry(a, struct thread, elem);
   struct thread *t_b = list_entry(b, struct thread, elem);
-  return (t_a->priority < t_b->priority)?1:0;
+  int priorA = thread_get_eff_prior(t_a);
+  int priorB = thread_get_eff_prior(t_b);
+  return (priorA < priorB)?1:0;
 }
 
 // Yield to highest thread
@@ -344,14 +346,14 @@ thread_yield_priority(void)
     {
       struct thread *cur = thread_current();
       struct thread *max = list_entry(list_max(&ready_list,
-			                       comp_priority,
+			                                         comp_priority,
                                                NULL),
                                       struct thread, elem);
       if (max->priority > cur->priority)
         {
-	  if (intr_context()) intr_yield_on_return();
-	  else thread_yield();
-	}
+	        if (intr_context()) intr_yield_on_return();
+	        else thread_yield();
+	      }
     }
   intr_set_level(old_level);
 }
@@ -377,8 +379,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  enum intr_level old_state = intr_disable();
   thread_current ()->priority = new_priority;
   thread_yield_priority();
+  intr_set_level(old_state);
 }
 
 /* Returns the current thread's priority. */
@@ -392,7 +396,33 @@ thread_get_priority (void)
 int
 thread_get_eff_prior(struct thread* t)
 {
-  return t->priority;
+  if (list_empty(&t->donorList))
+    return t->priority;
+  else
+  {
+    //struct thread *don = list_entry(list_max(&t->donorList,
+		//			     comp_priority,
+		//			     NULL),
+		//		    struct thread, donorElem);
+    int max_priority = 0;
+    struct list_elem *e;
+    for (e = list_begin(&t->donorList); e != list_end(&t->donorList);
+         e = e->next)
+    {
+      struct thread *don = list_entry(e, struct thread, donorElem);
+      int don_priority = thread_get_eff_prior(don);
+      if(don_priority > max_priority) max_priority = don_priority;
+    }
+    return max_priority;
+    //if (t->priority > don->priority)
+      //return t->priority;
+    //else
+      //return don->priority;
+    //if (t->priority > thread_get_eff_prior(don))
+    //  return t->priority;
+    //else
+    //  return thread_get_eff_prior(don);
+  }
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -512,6 +542,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
+
+  list_init(&t->donorList);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

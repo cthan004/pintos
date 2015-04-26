@@ -209,9 +209,9 @@ timer_interrupt (struct intr_frame *args UNUSED)
       t = list_entry(e, struct thread, sleepElem);
       if (t->awakeTime > timer_ticks()) break;
       thread_unblock(t);
-      list_remove(&t->sleepElem);	
+      list_remove(&t->sleepElem);
+      thread_yield_priority();
     }
-  thread_yield_priority();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

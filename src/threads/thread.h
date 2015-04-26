@@ -91,13 +91,14 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
 
     // For timer.c
-    int64_t awakeTime;
-    struct list_elem sleepElem;
+    int64_t awakeTime;                  // Hold time to wake up
+    struct list_elem sleepElem;         // List elem for sleepList 
     
     // For donation
-    struct list donorList;
-    struct list_elem donorElem;
-    struct lock *tLock;
+    struct list donorList;              // Each thread has its own donorList
+    struct list_elem donorElem;         // List elem for donorList
+    struct lock *tLock;                 /* Hold the lock that thread waits for
+                                           Use to check when remove from List */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -136,17 +137,19 @@ void thread_exit (void) NO_RETURN;
 void thread_yield (void);
 
 // New functions
-bool comp_priority(const struct list_elem *a,
-		   const struct list_elem *b,
+// Compare priority. Use in timer.c and synch.c
+bool comp_priority(const struct list_elem *a, const struct list_elem *b,
 		   void *aux UNUSED);
+// Check priority when there's new thread. Yield if necessary.
 void thread_yield_priority(void);
-int thread_get_eff_prior(struct thread *t);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
+// Recursive call for thread_get_priority
+int thread_get_eff_prior(struct thread *t);
 void thread_set_priority (int);
 
 int thread_get_nice (void);

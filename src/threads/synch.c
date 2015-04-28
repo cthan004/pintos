@@ -72,8 +72,6 @@ sema_down (struct semaphore *sema)
       thread_block ();
     }
   sema->value--;
-
-  thread_yield_priority();
   intr_set_level (old_level);
 }
 
@@ -117,11 +115,13 @@ sema_up (struct semaphore *sema)
   old_level = intr_disable ();
   if (!list_empty (&sema->waiters))
   {
+    // Unblock highest priority thread first
     struct list_elem *e = list_max(&sema->waiters, comp_priority, NULL);
     list_remove(e);
     thread_unblock (list_entry(e, struct thread, elem));
   }
   sema->value++;
+  // Yield if necessary after Unblock
   thread_yield_priority();
   intr_set_level (old_level);
 }
@@ -203,13 +203,22 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
   
   enum intr_level old_state = intr_disable();
-  // Add to donorList
+  // If there is lock holder
+  // Add this thread to donorList of lock holder
   if (lock->holder != NULL)
+  {
+    // Save lock to this thread 
+    thread_current()->tLock = lock;
     list_push_back(&lock->holder->donorList,&thread_current()->donorElem);
+  }
+  intr_set_level(old_state);
 
   sema_down (&lock->semaphore);
+  // This thread is now the holder
+  // Not waiting on any lock
+  thread_current()->tLock = NULL;
   lock->holder = thread_current ();
-  intr_set_level(old_state);
+  //intr_set_level(old_state);
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -244,14 +253,24 @@ lock_release (struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
   
   enum intr_level old_state = intr_disable();
-  // Remove donorList
+  // Remove all donors that hold this lock
   if (!list_empty(&thread_current()->donorList))
-    list_remove(&thread_current()->donorElem);
+  {
+    struct list_elem *e, *tmp;
+    for (e = list_begin(&thread_current()->donorList);
+         e != list_end(&thread_current()->donorList);
+	 e = tmp)
+    {
+      struct thread *t = list_entry(e, struct thread, donorElem);
+      tmp = list_next(e);
+      if (t->tLock == lock) list_remove(e);
+    }
+  }
+  intr_set_level(old_state);
 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
-  intr_set_level(old_state);
-  thread_yield_priority();
+  //intr_set_level(old_state);
 }
 
 /* Returns true if the current thread holds LOCK, false

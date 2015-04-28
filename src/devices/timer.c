@@ -7,8 +7,6 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
-// Include list
-#include <list.h>
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -91,6 +89,8 @@ timer_elapsed (int64_t then)
   return timer_ticks () - then;
 }
 
+// This function compare awakeTime
+// Use in timer_sleep for sleepList
 static bool
 compare_less (const struct list_elem *a,
 	      const struct list_elem *b,
@@ -207,9 +207,13 @@ timer_interrupt (struct intr_frame *args UNUSED)
        e != list_end(&sleepList); e = list_next(e))
     {
       t = list_entry(e, struct thread, sleepElem);
+      // Leave if it's not yet time to awake
       if (t->awakeTime > timer_ticks()) break;
-      thread_unblock(t);
+
+      // Wake up the thread
       list_remove(&t->sleepElem);
+      thread_unblock(t);
+      // Check and yield to highest priority after unblock
       thread_yield_priority();
     }
 }

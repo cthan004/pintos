@@ -207,7 +207,10 @@ There are no more special cases.
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
-We followed the TA's implementation.
+We chose to check the validity of the user provided pointer then
+dereference it.
+We chose this implementation because it is the simplest and
+may be easier to debug.
 
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?

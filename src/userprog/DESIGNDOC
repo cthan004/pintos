@@ -104,7 +104,7 @@ Parent is blocked until child finish.
 
   struct fd {
     int fd;
-    struct file *file; // Hold the file
+    struct file *file; // Struct to hold the file
     struct list_elem fdElem; // List elements for file descriptors 
   };
 

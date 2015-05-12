@@ -2,6 +2,7 @@
 #include <debug.h>
 #include <inttypes.h>
 #include <round.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,16 +20,18 @@
 #include "threads/vaddr.h"
 
 /* Struct used to share between process_execute() in the
- *    invoking thread and start_process() inside the newly invoked
- *       thread. */
+ * invoking thread and start_process() inside the newly invoked
+ * thread. */
 struct exec_helper 
   {
     const char *file_name;    //## Program to load (entire command line)
       /* ##Add semaphore for loading (for resource race cases!) */
+    semaphore semaphore;
       /* ##Add bool for determining if program loaded successfully */
+    bool success;
     /* ##Add other stuff you need to transfer between process_execute and 
        process_start (hint, think of the children... need a way to add to the 
-       child's list, wee below about thread's child list.) */
+       child's list, see below about thread's child list.) */
   };
 
 //## You should really understand how this code works so you know how to use it!

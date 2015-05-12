@@ -8,8 +8,8 @@
 
 >> Fill in the names and email addresses of your group members.
 
-Marco Morelos      mmore019@ucr.edu
-Chanapong Thananiwej cthan004@ucr.edu
+Marco Morelos           mmore019@ucr.edu
+Chanapong Thananiwej    cthan004@ucr.edu
 
 ---- PRELIMINARIES ----
 
@@ -29,9 +29,9 @@ Chanapong Thananiwej cthan004@ucr.edu
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-=======
-added
-=======
+============================
+added/modified in process.c
+============================
 
 struct exec_helper 
 

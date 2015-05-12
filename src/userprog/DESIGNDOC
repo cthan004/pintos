@@ -72,6 +72,9 @@ forced by the OS.
 
 Also, tokenization is not something that absolutely needs to be
 implemented into the kernel.
+(take for example MathOS that was discussed in class.
+ why implement math system calls when it can be done much
+ easier in user programs and with less overhead).
 Implementing the tokenization into the kernel would also mean that any bugs in
 the tokenization would be passed on to the user.
 
@@ -86,6 +89,10 @@ gives them more freedom in the implementation.
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
+We do not plan to add/modify structs for this section as we have yet
+to find a need to.
+We may add/modify something later.
 
 >> B2: Describe how file descriptors are associated with open files.
 >> Are file descriptors unique within the entire OS or just within a

@@ -146,8 +146,13 @@ There are no more special cases.
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
+We followed the TA's implementation.
+
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
+
+We used list because it is natural and simple. One disadvantage
+is searching when the list is large.
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?

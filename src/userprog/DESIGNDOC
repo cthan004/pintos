@@ -99,6 +99,9 @@ File descriptors are unique just within a single process.
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
 
+We check if the pointer points to a valid user data.
+Then we directly access it and read or write.
+
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
 >> and the greatest possible number of inspections of the page table
@@ -106,8 +109,17 @@ File descriptors are unique just within a single process.
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
+The least is 1 and the greatest is 4096. For 2 bytes of data, the
+least is also 1, but the greatest improved to 2048. 
+
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
+
+We traverse childList to find the child. If the child is not found,
+then the child has already been removed.
+
+If the child is found, we block the parent with a lock and
+release after the child has finished.
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -122,6 +134,16 @@ File descriptors are unique just within a single process.
 >> allocated resources (locks, buffers, etc.) are freed?  In a few
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
+
+We check every pointers in the beginning to make sure that 
+it is not null. This also includes every pointer arguments.
+We only allocated resources as needed so that there are less
+resources to free when we found a bad pointer.
+
+Example: Read system call.
+We first check every pointers to make sure it is valid.
+We then read in the arguments and check them if they are pointers.
+We also verify that the file descriptors have valid files.
 
 ---- SYNCHRONIZATION ----
 
@@ -140,15 +162,15 @@ that "exec" return after load finished. We then up after loading.
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
-When P call wait before C exits, P is blocked. We unblocked after
+When P calls wait before C exits, P is blocked. We unblock after
 C exits. The kernel frees C and P frees some C data.
 
-When P call after C exits, we just have to frees C data in P.
+When P calls after C exits, we just have to free C data in P.
 
 When P terminates before C, P updates C. The new parent of C
 is the parent of P.
 
-P terminates after C is the same case as P call wait after
+P terminates after C is the same case as P calls wait after
 C exits.
 
 There are no more special cases.
@@ -163,8 +185,9 @@ We followed the TA's implementation.
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
-We used list because it is natural and simple. One disadvantage
-is searching when the list is large.
+We used list because it is natural and simple.
+We also are given list implementation. One disadvantage
+is that searching takes a long time when the list is large.
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?

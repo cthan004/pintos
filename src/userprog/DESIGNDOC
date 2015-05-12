@@ -35,9 +35,20 @@ FirstName LastName <email@ucr.edu>
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
+We use a for loop to tokenize the entire argument string using strtok_r.
+We store the tokens into argv[] as they are tokenized.
+The tokens will naturally be stored in order because strtok_r
+progresses through the argument string from left to right.
+
+
 ---- RATIONALE ----
 
 >> A3: Why does Pintos implement strtok_r() but not strtok()?
+
+strtok modifies the string that is being tokenized while
+strtok_r does not.
+This is important because pintos should not modify the strings
+that the user is passing into the system. 
 
 >> A4: In Pintos, the kernel separates commands into a executable name
 >> and arguments.  In Unix-like systems, the shell does this

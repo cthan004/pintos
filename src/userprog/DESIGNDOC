@@ -54,6 +54,18 @@ that the user is passing into the system.
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
 
+The Unix approach means that the delimiters for the argument
+tokenization can be explicitly chosen by the user instead of being
+forced by the OS.
+
+Also, tokenization is not something that absolutely needs to be
+implemented into the kernel.
+Implementing the tokenization into the kernel would also mean that any bugs in
+the tokenization would be passed on to the user.
+
+In summary, the unix way pushes the responsibilty of upkeep to the user and
+gives them more freedom in the implementation.
+
            SYSTEM CALLS
            ============
 

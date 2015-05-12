@@ -75,6 +75,9 @@ forced by the OS.
 
 Also, tokenization is not something that absolutely needs to be
 implemented into the kernel.
+(take for example MathOS that was discussed in class.
+ why implement math system calls when it can be done much
+ easier in user programs and with less overhead).
 Implementing the tokenization into the kernel would also mean that any bugs in
 the tokenization would be passed on to the user.
 

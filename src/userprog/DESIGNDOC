@@ -9,7 +9,7 @@
 >> Fill in the names and email addresses of your group members.
 
 Marco Morelos      mmore019@ucr.edu
-FirstName LastName <email@ucr.edu>
+Chanapong Thananiwej cthan004@ucr.edu
 
 ---- PRELIMINARIES ----
 
@@ -79,6 +79,9 @@ gives them more freedom in the implementation.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
 
+When files are opened, file descriptors are created.
+File descriptors are unique just within a single process.
+
 ---- ALGORITHMS ----
 
 >> B3: Describe your code for reading and writing user data from the
@@ -115,6 +118,9 @@ gives them more freedom in the implementation.
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 
+We down a semaphore to block before loading to make sure
+that "exec" return after load finished. We then up after loading.
+
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
 >> calls wait(C) before C exits?  After C exits?  How do you ensure
@@ -122,16 +128,37 @@ gives them more freedom in the implementation.
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
+When P call wait before C exits, P is blocked. We unblocked after
+C exits. The kernel frees C and P frees some C data.
+
+When P call after C exits, we just have to frees C data in P.
+
+When P terminates before C, P updates C. The new parent of C
+is the parent of P.
+
+P terminates after C is the same case as P call wait after
+C exits.
+
+There are no more special cases.
+
 ---- RATIONALE ----
 
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
+We followed the TA's implementation.
+
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
+We used list because it is natural and simple. One disadvantage
+is searching when the list is large.
+
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
+
+We do not plan to change the default mapping because it is
+working.
 
          SURVEY QUESTIONS
          ================

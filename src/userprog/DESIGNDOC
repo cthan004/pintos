@@ -9,7 +9,7 @@
 >> Fill in the names and email addresses of your group members.
 
 Marco Morelos      mmore019@ucr.edu
-FirstName LastName <email@ucr.edu>
+Chanapong Thananiwej cthan004@ucr.edu
 
 ---- PRELIMINARIES ----
 
@@ -67,6 +67,9 @@ that the user is passing into the system.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
 
+When files are opened, file descriptors are created.
+File descriptors are unique just within a single process.
+
 ---- ALGORITHMS ----
 
 >> B3: Describe your code for reading and writing user data from the
@@ -103,6 +106,9 @@ that the user is passing into the system.
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 
+We down a semaphore to block before loading to make sure
+that "exec" return after load finished. We then up after loading.
+
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
 >> calls wait(C) before C exits?  After C exits?  How do you ensure
@@ -120,6 +126,9 @@ that the user is passing into the system.
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
+
+We do not plan to change the default mapping because it is
+working.
 
          SURVEY QUESTIONS
          ================

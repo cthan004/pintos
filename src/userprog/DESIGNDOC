@@ -29,6 +29,18 @@ Chanapong Thananiwej cthan004@ucr.edu
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+=======
+added
+=======
+
+struct exec_helper 
+
+This struct is shared between process_execute() and start_process().
+The purpose of this is to help communicate between the invoking thread
+and the invoked thread.
+
+
+
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe how you implemented argument parsing.  How do

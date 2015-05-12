@@ -208,6 +208,8 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+  // Yield if necessary after Unblock
+  thread_yield_priority();
 
   return tid;
 }
@@ -322,6 +324,41 @@ thread_yield (void)
   intr_set_level (old_level);
 }
 
+// Comp priority function
+bool
+comp_priority(const struct list_elem *a,
+	      const struct list_elem *b,
+	      void *aux UNUSED)
+{
+  struct thread *t_a = list_entry(a, struct thread, elem);
+  struct thread *t_b = list_entry(b, struct thread, elem);
+  int priorA = thread_get_eff_prior(t_a);
+  int priorB = thread_get_eff_prior(t_b);
+  return (priorA < priorB)?1:0;
+}
+
+// Yield to highest thread
+void
+thread_yield_priority(void)
+{
+  enum intr_level old_level = intr_disable();
+
+  if (!list_empty(&ready_list))
+    {
+      struct thread *cur = thread_current();
+      struct thread *max = list_entry(list_max(&ready_list,
+			                       comp_priority,
+                                               NULL),
+                                      struct thread, elem);
+      if (max->priority > cur->priority)
+        {
+	  if (intr_context()) intr_yield_on_return();
+          else thread_yield();
+	}
+    }
+  intr_set_level(old_level);
+}
+
 /* Invoke function 'func' on all threads, passing along 'aux'.
    This function must be called with interrupts off. */
 void
@@ -343,14 +380,39 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  // Disable interrupt to avoid race condition.
+  enum intr_level old_state = intr_disable();
   thread_current ()->priority = new_priority;
+  thread_yield_priority();
+  intr_set_level(old_state);
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+  return thread_get_eff_prior(thread_current());
+}
+
+// Get priority including donation
+int
+thread_get_eff_prior(struct thread* t)
+{
+  if (list_empty(&t->donorList))
+    return t->priority;
+  else
+  {
+    int max_priority = 0;
+    struct list_elem *e;
+    for (e = list_begin(&t->donorList); e != list_end(&t->donorList);
+         e = e->next)
+    {
+      struct thread *don = list_entry(e, struct thread, donorElem);
+      int don_priority = thread_get_eff_prior(don);
+      if(don_priority > max_priority) max_priority = don_priority;
+    }
+    return max_priority;
+  }
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -432,7 +494,7 @@ kernel_thread (thread_func *function, void *aux)
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
 }
-
+
 /* Returns the running thread. */
 struct thread *
 running_thread (void) 
@@ -470,6 +532,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
+
+  list_init(&t->donorList);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -496,7 +560,12 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
-    return list_entry (list_pop_front (&ready_list), struct thread, elem);
+  {
+    // Return highest priority thread. Called by schedule().
+    struct list_elem *e = list_max(&ready_list, comp_priority, NULL);
+    list_remove(e);
+    return list_entry(e, struct thread, elem);
+  }
 }
 
 /* Completes a thread switch by activating the new thread's page

@@ -87,6 +87,27 @@ gives them more freedom in the implementation.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+Add to thread.h/.c:
+  in struct thread:
+    struct list fdList; // List of file descriptors
+    struct list childList; // List of child threads
+    struct thread *tParent; // Points to parent
+    struct lock waitLock; // Lock to wait for child to finish
+
+waitLock holds the lock when the parent calls wait(child).
+Parent is blocked until child finish.
+
+  struct tChild {
+    tid_t tid; // Child tid
+    struct list_elem childElem; // List elements for child
+  };
+
+  struct fd {
+    int fd;
+    struct file *file; // Hold the file
+    struct list_elem fdElem; // List elements for file descriptors 
+  };
+
 >> B2: Describe how file descriptors are associated with open files.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?

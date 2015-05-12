@@ -52,6 +52,9 @@ We store the tokens into argv[] as they are tokenized.
 The tokens will naturally be stored in order because strtok_r
 progresses through the argument string from left to right.
 
+To avoid overflow, we check the numbers of arguments in the beginning.
+If the arguments are too large and will overflow the stack,
+we simply exit.
 
 ---- RATIONALE ----
 
@@ -90,9 +93,26 @@ gives them more freedom in the implementation.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-We do not plan to add/modify structs for this section as we have yet
-to find a need to.
-We may add/modify something later.
+Add to thread.h/.c:
+  in struct thread:
+    struct list fdList; // List of file descriptors
+    struct list childList; // List of child threads
+    struct thread *tParent; // Points to parent
+    struct lock waitLock; // Lock to wait for child to finish
+
+waitLock holds the lock when the parent calls wait(child).
+Parent is blocked until child finish.
+
+  struct tChild {
+    tid_t tid; // Child tid
+    struct list_elem childElem; // List elements for child
+  };
+
+  struct fd {
+    int fd;
+    struct file *file; // Struct to hold the file
+    struct list_elem fdElem; // List elements for file descriptors 
+  };
 
 >> B2: Describe how file descriptors are associated with open files.
 >> Are file descriptors unique within the entire OS or just within a

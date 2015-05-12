@@ -52,6 +52,9 @@ We store the tokens into argv[] as they are tokenized.
 The tokens will naturally be stored in order because strtok_r
 progresses through the argument string from left to right.
 
+To avoid overflow, we check the numbers of arguments in the beginning.
+If the arguments are too large and will overflow the stack,
+we simply exit.
 
 ---- RATIONALE ----
 

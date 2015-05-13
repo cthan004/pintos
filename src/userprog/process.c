@@ -27,7 +27,7 @@ struct exec_helper
   {
     const char *file_name;    //## Program to load (entire command line)
       /* ##Add semaphore for loading (for resource race cases!) */
-    struct semaphore semaphore;
+    struct semaphore sema;
       /* ##Add bool for determining if program loaded successfully */
     bool success;
     /* ##Add other stuff you need to transfer between process_execute and 
@@ -74,46 +74,55 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name) 
 {
-  //##struct exec_helper exec;
-  //##char thread_name[16];
-  char *fn_copy; //## I got rid of this...
+  struct exec_helper exec;
+  char thread_name[16];
+  //char *fn_copy; //## I got rid of this...
   tid_t tid;
     
   
   //##Set exec file name here
+  exec.file_name = file_name;  
   //##Initialize a semaphore for loading here
+  sema_init(&exec.sema, 1);
+ 
 
-
-  //##vvvvvv Got rid of this vvvvvvvv
-  /* Make a copy of FILE_NAME.
-     Otherwise there's a race between the caller and load(). */
-  fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL)
-    return TID_ERROR;
-  strlcpy (fn_copy, file_name, PGSIZE);
-  
-  //##^^^^^^^^^^^^^^^^^^^^^^^^
+  ////##vvvvvv Got rid of this vvvvvvvv
+  ///* Make a copy of FILE_NAME.
+  //   Otherwise there's a race between the caller and load(). */
+  //fn_copy = palloc_get_page (0);
+  //if (fn_copy == NULL)
+  //  return TID_ERROR;
+  //strlcpy (fn_copy, file_name, PGSIZE);
+  //
+  ////##^^^^^^^^^^^^^^^^^^^^^^^^
   
   //##Add program name to thread_name, watch out for the size, strtok_r.....
   //##Program name is the first token of file_name
+  char *saveptr = NULL;
+  strlcpy(thread_name, strtok_r(exec.file_name, " ", &saveptr), 16);
   
   //##Change file_name in thread_create to thread_name
-  /*  Create a new thread to execute FILE_NAME.
-    ##remove fn_copy, Add exec to the end of these params, a void is 
-      allowed. Look in thread_create, kf->aux is set to thread_create aux 
-      which would be exec. So make good use of exec helper! */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy); 
-  if (tid == TID_ERROR) //##Change to !=
+  /*  Create a new thread to execute FILE_NAMEi. */
+  //##remove fn_copy, Add exec to the end of these params, a void is 
+  //  allowed. Look in thread_create, kf->aux is set to thread_create aux 
+  //  which would be exec. So make good use of exec helper! 
+  tid = thread_create (thread_name, PRI_DEFAULT, start_process, &exec); 
+  if (tid != TID_ERROR) //##Change to !=
   {
-    /* ##Down a semaphore for loading (where should you up it?)
-       ##If program load successfull, add new child to the list of this 
-         thread's children (mind your list_elems)... we need to check this 
-         list in process wait, when children are done, process wait can 
-         finish... see process wait...
-       ##else TID_ERROR
-     */
+    //##Down a semaphore for loading (where should you up it?)
+    sema_down(&exec.sema);
+    //##If program load successfull
+    if(exec.success)
+      {
+        /*add new child to the list of this 
+          thread's children (mind your list_elems)... we need to check this 
+          list in process wait, when children are done, process wait can 
+          finish... see process wait... */
+      }
+    //##else TID_ERROR
+    
   }
-    palloc_free_page (fn_copy); //##Got rid...
+    //palloc_free_page (fn_copy); //##Got rid...
   return tid;
 } 
 

@@ -97,46 +97,24 @@ process_execute (const char *file_name)
   //##Program name is the first token of file_name
   
   //##Change file_name in thread_create to thread_name
-  /* Create a new thread to execute FILE_NAME.
-     ##remove fn_copy, Add exec to the end of these params, a void is 
-     allowed. Look in thread_create, kf->aux is set to thread_create aux 
-     which would be exec. So make good use of exec helper! */
+  /*Create a new thread to execute FILE_NAME.
+    ##remove fn_copy, Add exec to the end of these params, a void is 
+      allowed. Look in thread_create, kf->aux is set to thread_create aux 
+      which would be exec. So make good use of exec helper! */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy); 
   if (tid == TID_ERROR) //##Change to !=
   {
     /* ##Down a semaphore for loading (where should you up it?)
        ##If program load successfull, add new child to the list of this 
-       thread's children (mind your list_elems)... we need to check this 
-       list in process wait, when children are done, process wait can 
-       finish... see process wait...
+         thread's children (mind your list_elems)... we need to check this 
+         list in process wait, when children are done, process wait can 
+         finish... see process wait...
        ##else TID_ERROR
      */
   }
     palloc_free_page (fn_copy); //##Got rid...
   return tid;
 } 
-
-/* old process_execute. I wont remove this in the case that we need to
-   refer to it later */
-//tid_t
-//process_execute (const char *file_name) 
-//{
-//  char *fn_copy;
-//  tid_t tid;
-//
-//  /* Make a copy of FILE_NAME.
-//     Otherwise there's a race between the caller and load().  */
-//  fn_copy = palloc_get_page (0);
-//  if (fn_copy == NULL)
-//    return TID_ERROR;
-//  strlcpy (fn_copy, file_name, PGSIZE);
-//
-//  /* Create a new thread to execute FILE_NAME. */
-//  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-//  if (tid == TID_ERROR)
-//    palloc_free_page (fn_copy); 
-//  return tid;
-//}
 
 /* A thread function that loads a user process and starts it
    running. */

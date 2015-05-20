@@ -517,6 +517,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   return true;
 }
 
+/* Create a minimal stack by mapping a zeroed page at the top of
+   user virtual memory. */
 static bool
 setup_stack (void **esp)//##Add cmd_line here 
 {
@@ -537,26 +539,6 @@ setup_stack (void **esp)//##Add cmd_line here
     }
   return success;
 }
-
-///* Create a minimal stack by mapping a zeroed page at the top of
-//   user virtual memory. */
-//static bool
-//setup_stack (void **esp) 
-//{
-//  uint8_t *kpage;
-//  bool success = false;
-//
-//  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-//  if (kpage != NULL) 
-//    {
-//      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-//      if (success)
-//        *esp = PHYS_BASE - 12; //remove the "- 12" later
-//      else
-//        palloc_free_page (kpage);
-//    }
-//  return success;
-//}
 
 static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t * upage, void ** esp) 
 {

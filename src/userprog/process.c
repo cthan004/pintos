@@ -549,16 +549,20 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   
   //##Parse and put in command line arguments, push each value
   //##if any push() returns NULL, return false
-  char * token = strtok_r(cmd_line, " ", ptr);
+  char * token = strtok_r(cmd_line, " ", ptr); //command
+  if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+    return false;
   
-  if (NULL == push (kpage, &ofs, ,
-                    sizeof())); 
-  for ( ; ; )
+  char * top = token; //helps with for loop
+  for ( ; top != NULL ; token = strtok_r(NULL, " ", ptr))
     {
-
-
+      if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+        return false;
+      top = token;
     }
-  
+  //end pushing values
+
+  //push the addresses of the values in reverse order (right -> left)
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false
   

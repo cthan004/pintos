@@ -544,11 +544,20 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
 {
   size_t ofs = PGSIZE; //##Used in push!
   char * const null = NULL; //##Used for pushing nulls
-  char *ptr; //##strtok_r usage
+  char * ptr; //##strtok_r usage
   //##Probably need some other variables here as well...
   
   //##Parse and put in command line arguments, push each value
   //##if any push() returns NULL, return false
+  char * token = strtok_r(cmd_line, " ", ptr);
+  
+  if (NULL == push (kpage, &ofs, ,
+                    sizeof())); 
+  for ( ; ; )
+    {
+
+
+    }
   
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false

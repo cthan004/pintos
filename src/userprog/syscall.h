@@ -3,7 +3,7 @@
 
 void syscall_init (void);
 
-// System calls
+// Added System calls
 void halt(void);
 void exit(int status);
 pid_t exec(const char *cmd_line);

@@ -4,6 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "devices/shutdown.h"
 
 static void syscall_handler (struct intr_frame *);
 static void copy_in (void *dst_, const void *usrc_, size_t size);
@@ -17,14 +18,13 @@ syscall_init (void)
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
-static void
-syscall_handler (struct intr_frame *f UNUSED) 
-{
-  printf ("system call!\n");
-  thread_exit ();
-}
+//static void
+//syscall_handler (struct intr_frame *f UNUSED) 
+//{
+  //printf ("system call!\n");
+  //thread_exit ();
+//}
 
-/*
 static void
 syscall_handler (struct intr_frame *f)
 {
@@ -44,8 +44,34 @@ syscall_handler (struct intr_frame *f)
   //##Use switch statement or something and run this below for each
   //##Depending on the callNum...
   //f->eax = desired_sys_call_fun (args[0], args[1], args[2]);
+  switch (callNum)
+  {
+    case SYS_HALT:
+      halt();
+      break;
+    case SYS_EXIT:
+      exit(args[0]);
+      break;
+    case SYS_WRITE:
+      //f->eax = write();
+      break;
+    default:
+      break;
+  }
 }
-*/
+
+void
+halt()
+{
+  shutdown_power_off();
+}
+
+void
+exit(int status)
+{
+  struct thread *cur = thread_current();
+  printf("%s: exit(%d)\n", cur->name, status);
+}
 
 /* Copies SIZE bytes from user address USRC to kernel address
    DST.
@@ -83,7 +109,7 @@ copy_in_string (const char *us)
       palloc_free_page (ks);
       thread_exit (); 
     }
-                                                                                    if (ks[length] == '\0') 
+    if (ks[length] == '\0') 
       return ks;
   }
   ks[PGSIZE - 1] = '\0';

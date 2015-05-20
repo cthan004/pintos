@@ -278,6 +278,7 @@ struct Elf32_Phdr
 #define PF_R 4          /* Readable. */
 
 static bool setup_stack (void **esp);
+static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t * upage, void ** esp);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -535,6 +536,33 @@ setup_stack (void **esp)
     }
   return success;
 }
+
+static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t * upage, void ** esp) 
+{
+  size_t ofs = PGSIZE; //##Used in push!
+  char * const null = NULL; //##Used for pushing nulls
+  char *ptr; //##strtok_r usage
+  //##Probably need some other variables here as well...
+  
+  //##Parse and put in command line arguments, push each value
+  //##if any push() returns NULL, return false
+  
+  //##push() a null (more precisely &null).
+  //##if push returned NULL, return false
+  
+  
+  //##Push argv addresses (i.e. for the cmd_line added above) in reverse order
+  //##See the stack example on documentation for what "reversed" means
+  //##Push argc, how can we determine argc?
+  //##Push &null
+  //##Should you check for NULL returns?
+  
+  //##Set the stack pointer. IMPORTANT! Make sure you use the right value here...
+  *esp = upage + ofs;
+  
+  //##If you made it this far, everything seems good, return true
+}
+
 
 /* Adds a mapping from user virtual address UPAGE to kernel
    virtual address KPAGE to the page table.

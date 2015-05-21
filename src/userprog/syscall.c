@@ -143,7 +143,7 @@ write(int fd, const void *buffer, unsigned size)
 void
 seek(int fd, unsigned position)
 {
-
+//
 }
 
 unsigned

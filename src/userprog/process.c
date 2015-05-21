@@ -31,7 +31,7 @@ struct exec_helper
       /* ##Add bool for determining if program loaded successfully */
     bool success;
     /* ##Add other stuff you need to transfer between process_execute and 
-       process_start (hint, think of the children... need a way to add to the 
+       start_process (hint, think of the children... need a way to add to the 
        child's list, see below about thread's child list.) */
   };
 
@@ -76,38 +76,23 @@ process_execute (const char *file_name)
 {
   struct exec_helper exec;
   char thread_name[16];
-  //char *fn_copy; //## I got rid of this...
   tid_t tid;
-    
   
-  //##Set exec file name here
+  //initialize exec
   exec.file_name = file_name;  
-  //##Initialize a semaphore for loading here
   sema_init(&exec.sema, 1);
- 
+  exec.success = 0;
 
-  ////##vvvvvv Got rid of this vvvvvvvv
-  ///* Make a copy of FILE_NAME.
-  //   Otherwise there's a race between the caller and load(). */
-  //fn_copy = palloc_get_page (0);
-  //if (fn_copy == NULL)
-  //  return TID_ERROR;
-  //strlcpy (fn_copy, file_name, PGSIZE);
-  //
-  ////##^^^^^^^^^^^^^^^^^^^^^^^^
-  
-  //##Add program name to thread_name, watch out for the size, strtok_r.....
-  //##Program name is the first token of file_name
+  //set thread_name to first token in file_name (max length is 16)
   char *saveptr = NULL;
   strlcpy(thread_name, strtok_r(exec.file_name, " ", &saveptr), 16);
   
-  //##Change file_name in thread_create to thread_name
-  /*  Create a new thread to execute FILE_NAMEi. */
+  /*  Create a new thread to execute file_name. */
   //##remove fn_copy, Add exec to the end of these params, a void is 
   //  allowed. Look in thread_create, kf->aux is set to thread_create aux 
   //  which would be exec. So make good use of exec helper! 
   tid = thread_create (thread_name, PRI_DEFAULT, start_process, &exec); 
-  if (tid != TID_ERROR) //##Change to !=
+  if (tid != TID_ERROR) 
   {
     //##Down a semaphore for loading (where should you up it?)
     sema_down(&exec.sema);
@@ -118,11 +103,13 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
+          
       }
-    //##else TID_ERROR
-    
+    else tid = TID_ERROR;
+    //may need to change the location of this semaphore
+    sema_up(&exec.sema);
   }
-    //palloc_free_page (fn_copy); //##Got rid...
+  
   return tid;
 } 
 
@@ -277,7 +264,7 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp);
+static bool setup_stack (void **esp, const char * cmd_line);
 static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t * upage, void ** esp);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
@@ -289,17 +276,17 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
 bool
-load (const char *file_name, void (**eip) (void), void **esp) //##Change file name to cmd_line
+load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file name to cmd_line
 {
   struct thread *t = thread_current ();
-  //##char file_name[NAME_MAX + 2];    ##Add a file name variable 
+  char file_name[NAME_MAX + 2];       //##Add a file name variable 
                                       //here, the file_name and 
                                       //cmd_line are DIFFERENT!
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
   off_t file_ofs;
   bool success = false;
-  //##char* charPointer;    ##Add this for parsing!
+  char* charPointer;                  //##Add this for parsing!
   int i;
   
   /* Allocate and activate page directory. */
@@ -309,7 +296,8 @@ load (const char *file_name, void (**eip) (void), void **esp) //##Change file na
   process_activate ();
   
   //## Use strtok_r to remove file_name from cmd_line
-  
+  strlcpy(file_name, strtok_r(cmd_line, " ", charPointer), NAME_MAX + 2);
+
   /* Open executable file. */
   file = filesys_open (file_name);  //## Set the thread's bin file to this
                                     //as well! It is super helpful to have
@@ -396,7 +384,7 @@ load (const char *file_name, void (**eip) (void), void **esp) //##Change file na
     }
   
   /* Set up stack. */
-  if (!setup_stack (esp))  //##Add cmd_line to setup_stack param here, also change setup_stack
+  if (!setup_stack (esp, cmd_line))  //##Add cmd_line to setup_stack param here, also change setup_stack
     goto done;
   
   /* Start address. */
@@ -406,7 +394,9 @@ load (const char *file_name, void (**eip) (void), void **esp) //##Change file na
   
   done:
     /* We arrive here whether the load is successful or not. */
-    file_close (file);    //##Remove this!!!!!!!!Since thread has its own file, close it when process is done (hint: in process exit.
+    //file_close (file);    //##Remove this!!!!!!!!Since thread has 
+                            //its own file, close it when process 
+                            //is done (hint: in process exit.
     return success;
 }
 /* load() helpers. */
@@ -520,7 +510,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp)//##Add cmd_line here 
+setup_stack (void **esp, const char * cmd_line)//##Add cmd_line here 
 {
   uint8_t *kpage;
   bool success = false;
@@ -530,10 +520,9 @@ setup_stack (void **esp)//##Add cmd_line here
     {
       uint8_t *upage = ( (uint8_t *) PHYS_BASE ) - PGSIZE;
       //##Change the first parameter to upage since its the same thing.
-      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true); 
+      success = install_page (upage, kpage, true); 
       if (success)
-        *esp = PHYS_BASE - 12; //## Remove this, setup_stack_helper will set esp
-        //## success = setup_stack_helper(...)
+        success = setup_stack_helper(cmd_line, kpage, upage, esp);
       else
         palloc_free_page (kpage);
     }
@@ -544,12 +533,25 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
 {
   size_t ofs = PGSIZE; //##Used in push!
   char * const null = NULL; //##Used for pushing nulls
-  char *ptr; //##strtok_r usage
+  char * ptr; //##strtok_r usage
   //##Probably need some other variables here as well...
   
   //##Parse and put in command line arguments, push each value
   //##if any push() returns NULL, return false
+  char * token = strtok_r(cmd_line, " ", &ptr); //command
+  if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+    return false;
   
+  /* pushes tokens one by one onto the stack*/
+  for ( ; top != NULL ; token = strtok_r(NULL, " ", ptr))
+    {
+      if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+        return false;
+      top = token;
+    }
+  //end pushing values
+
+  //push the addresses of the values in reverse order (right -> left)
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false
   

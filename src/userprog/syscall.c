@@ -8,6 +8,21 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
+// Added System calls
+void halt(void);
+void exit(int status);
+int exec(const char *cmd_line);
+int wait(int pid);
+bool create(const char *file, unsigned initial_size);
+bool remove(const char *file);
+int open(const char *file);
+int filesize(int fd);
+int read(int fd, void *buffer, unsigned size);
+int write(int fd, const void *buffer, unsigned size);
+void seek(int fd, unsigned position);
+unsigned tell(int fd);
+void close(int fd);
+
 static void syscall_handler (struct intr_frame *);
 static void copy_in (void *dst_, const void *usrc_, size_t size);
 static char *copy_in_string (const char *us);
@@ -48,27 +63,37 @@ syscall_handler (struct intr_frame *f)
       exit(args[0]);
       break;
     case SYS_EXEC:
+      f->eax = exec(args[0]);
       break;
     case SYS_WAIT:
+      f->eax = wait(args[0]);
       break;
     case SYS_CREATE:
+      f->eax = create(args[0], args[1]);
       break;
     case SYS_REMOVE:
+      f->eax = remove(args[0]);
       break;
     case SYS_OPEN:
+      f->eax = open(args[0]);
       break;
     case SYS_FILESIZE:
+      f->eax = filesize(args[0]);
       break;
     case SYS_READ:
+      f->eax = read(args[0], args[1]);
       break;
     case SYS_WRITE:
-      //f->eax = write();
+      f->eax = write(args[0], args[1], args[2]);
       break;
     case SYS_SEEK:
+      seek(args[0], args[1]);
       break;
     case SYS_TELL:
+      f->eax = tell(args[0]);
       break;
     case SYS_CLOSE:
+      close(args[0]);
       break;
     default:
       break;
@@ -97,7 +122,7 @@ exec(const char *cmd_line)
 int
 wait(int pid)
 {
-  return process_wait();
+  return process_wait(pid);
 }
 
 bool
@@ -115,19 +140,34 @@ remove(const char *file)
 int
 open(const char *file)
 {
-  
+  struct file_st *fs = palloc_get_page(0);
+  struct file *f = file_open(file);
+
+  fs->f = f;
+
+  struct thread *t = thread_current();
+  if (list_empty(&t->fList))
+    fs->fd = 2;
+  else
+    fs->fd = list_entry(list_back(&t->fList), struct file_st, fElem)->fd++;
+
+  list.push_back(&t->fList, fs->fElem);
+
+  return fs->fd; 
 }
 
 int
 filesize(int fd)
 {
-  
+  struct file *f = get_file(fd);
+  return file_length(f); 
 }
 
 int
 read(int fd, void *buffer, unsigned size)
 {
-  
+  struct file *f = get_file(fd);
+  return file_read(f, buffer, size);
 }
 
 int
@@ -138,24 +178,29 @@ write(int fd, const void *buffer, unsigned size)
     putbuf(buffer, size);
     return size;
   }
+  struct file *f = get_file(fd);
+  return file_write(f, buffer, size);
 }
 
 void
 seek(int fd, unsigned position)
-{
-//
+{ 
+  struct file *f = get_file(fd);
+  file_seek(f, position);
 }
 
 unsigned
 tell(int fd)
 {
-
+  struct file *f = get_file(fd);
+  return file_tell(f);
 }
 
 void
 close(int fd)
 {
-
+  struct file *f = get_file(fd);
+  file_close(f);
 }
 
 
@@ -222,4 +267,24 @@ verify_user (const void *uaddr)
   return (uaddr < PHYS_BASE
     && pagedir_get_page (thread_current ()->pagedir, uaddr) != NULL);
 }
-	
+
+struct file *
+get_file(int fd)
+{
+  struct thread *t = thread_current();
+  struct file_st *fs;
+  struct list_elem *e;
+  for (e = list_begin(&t->fList);
+       e != list_end(&t->fList);
+       e = e->next)
+  {
+    fs = list_entry(e, struct file_st, fElem);
+    if (fd == fs->fd)
+    {
+      return fs->f;
+    }
+  }
+  
+  return NULL;
+}
+

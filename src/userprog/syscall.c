@@ -86,6 +86,73 @@ exit(int status)
   printf("%s: exit(%d)\n", cur->name, status);
 }
 
+int
+exec(const char *cmd_line)
+{
+  return process_execute(cmd_line);
+}
+
+int
+wait(int pid)
+{
+  return process_wait();
+}
+
+bool
+create(const char *file, unsigned initial_size)
+{
+
+}
+
+bool
+remove(const char *file)
+{
+  
+}
+
+int
+open(const char *file)
+{
+  
+}
+
+int
+filesize(int fd)
+{
+  
+}
+
+int
+read(int fd, void *buffer, unsigned size)
+{
+  
+}
+
+int
+write(int fd, const void *buffer, unsigned size)
+{
+
+}
+
+void
+seek(int fd, unsigned position)
+{
+
+}
+
+unsigned
+tell(int fd)
+{
+
+}
+
+void
+close(int fd)
+{
+
+}
+
+
 /* Copies SIZE bytes from user address USRC to kernel address
    DST.
    Call thread_exit() if any of the user accesses are invalid. */

@@ -76,7 +76,6 @@ process_execute (const char *file_name)
 {
   struct exec_helper exec;
   char thread_name[16];
-  //char *fn_copy; //## I got rid of this...
   tid_t tid;
     
   
@@ -84,17 +83,6 @@ process_execute (const char *file_name)
   exec.file_name = file_name;  
   //##Initialize a semaphore for loading here
   sema_init(&exec.sema, 1);
- 
-
-  ////##vvvvvv Got rid of this vvvvvvvv
-  ///* Make a copy of FILE_NAME.
-  //   Otherwise there's a race between the caller and load(). */
-  //fn_copy = palloc_get_page (0);
-  //if (fn_copy == NULL)
-  //  return TID_ERROR;
-  //strlcpy (fn_copy, file_name, PGSIZE);
-  //
-  ////##^^^^^^^^^^^^^^^^^^^^^^^^
   
   //##Add program name to thread_name, watch out for the size, strtok_r.....
   //##Program name is the first token of file_name
@@ -102,12 +90,12 @@ process_execute (const char *file_name)
   strlcpy(thread_name, strtok_r(exec.file_name, " ", &saveptr), 16);
   
   //##Change file_name in thread_create to thread_name
-  /*  Create a new thread to execute FILE_NAMEi. */
+  /*  Create a new thread to execute FILE_NAME. */
   //##remove fn_copy, Add exec to the end of these params, a void is 
   //  allowed. Look in thread_create, kf->aux is set to thread_create aux 
   //  which would be exec. So make good use of exec helper! 
   tid = thread_create (thread_name, PRI_DEFAULT, start_process, &exec); 
-  if (tid != TID_ERROR) //##Change to !=
+  if (tid != TID_ERROR) 
   {
     //##Down a semaphore for loading (where should you up it?)
     sema_down(&exec.sema);
@@ -118,11 +106,12 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
+
       }
-    //##else TID_ERROR
-    
+    else tid = TID_ERROR;
+    sema_up(&exec.sema);
   }
-    //palloc_free_page (fn_copy); //##Got rid...
+  
   return tid;
 } 
 
@@ -544,12 +533,25 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
 {
   size_t ofs = PGSIZE; //##Used in push!
   char * const null = NULL; //##Used for pushing nulls
-  char *ptr; //##strtok_r usage
+  char * ptr; //##strtok_r usage
   //##Probably need some other variables here as well...
   
   //##Parse and put in command line arguments, push each value
   //##if any push() returns NULL, return false
+  char * token = strtok_r(cmd_line, " ", &ptr); //command
+  if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+    return false;
   
+  /* pushes tokens one by one onto the stack*/
+  for ( ; top != NULL ; token = strtok_r(NULL, " ", ptr))
+    {
+      if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+        return false;
+      top = token;
+    }
+  //end pushing values
+
+  //push the addresses of the values in reverse order (right -> left)
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false
   

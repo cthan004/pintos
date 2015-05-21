@@ -5,6 +5,8 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "devices/shutdown.h"
+#include "filesys/file.h"
+#include "filesys/filesys.h"
 
 static void syscall_handler (struct intr_frame *);
 static void copy_in (void *dst_, const void *usrc_, size_t size);
@@ -101,13 +103,13 @@ wait(int pid)
 bool
 create(const char *file, unsigned initial_size)
 {
-
+  return filesys_create(file, initial_size);
 }
 
 bool
 remove(const char *file)
 {
-  
+  return filesys_remove(file);
 }
 
 int
@@ -131,7 +133,11 @@ read(int fd, void *buffer, unsigned size)
 int
 write(int fd, const void *buffer, unsigned size)
 {
-
+  if (fd == STDOUT_FILENO)
+  {
+    putbuf(buffer, size);
+    return size;
+  }
 }
 
 void

@@ -1,10 +1,14 @@
 #include "userprog/syscall.h"
+#include "userprog/process.h"
 #include <stdio.h>
 #include <syscall-nr.h>
+#include <list.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/palloc.h"
 #include "devices/shutdown.h"
+#include "devices/input.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
@@ -25,9 +29,11 @@ void close(int fd);
 
 static void syscall_handler (struct intr_frame *);
 static void copy_in (void *dst_, const void *usrc_, size_t size);
-static char *copy_in_string (const char *us);
+//static char *copy_in_string (const char *us);
 static inline bool get_user (uint8_t *dst, const uint8_t *usrc);
-static bool verify_user (const void *uaddr);
+//static bool verify_user (const void *uaddr);
+
+struct file_st *get_fs(int fd);
 
 void
 syscall_init (void) 
@@ -47,7 +53,14 @@ syscall_handler (struct intr_frame *f)
 
   //##Using the number find out which system call is being used
   //numOfArgs = number of args that system call uses {0,1,2,3}
-  numOfArgs = 3;
+  if (callNum == SYS_HALT)
+    numOfArgs = 0;
+  else if (callNum == SYS_CREATE || callNum == SYS_SEEK)
+    numOfArgs = 2;
+  else if (callNum == SYS_READ || callNum == SYS_WRITE)
+    numOfArgs = 3;
+  else
+    numOfArgs = 1;
 				
   copy_in (args, (uint32_t *) f->esp + 1, sizeof *args * numOfArgs);
 					
@@ -63,28 +76,28 @@ syscall_handler (struct intr_frame *f)
       exit(args[0]);
       break;
     case SYS_EXEC:
-      f->eax = exec(args[0]);
+      f->eax = exec( (const char *) args[0]);
       break;
     case SYS_WAIT:
       f->eax = wait(args[0]);
       break;
     case SYS_CREATE:
-      f->eax = create(args[0], args[1]);
+      f->eax = create( (const char *) args[0], args[1]);
       break;
     case SYS_REMOVE:
-      f->eax = remove(args[0]);
+      f->eax = remove( (const char *) args[0]);
       break;
     case SYS_OPEN:
-      f->eax = open(args[0]);
+      f->eax = open( (const char *) args[0]);
       break;
     case SYS_FILESIZE:
       f->eax = filesize(args[0]);
       break;
     case SYS_READ:
-      f->eax = read(args[0], args[1]);
+      f->eax = read(args[0], (void *) args[1], args[2]);
       break;
     case SYS_WRITE:
-      f->eax = write(args[0], args[1], args[2]);
+      f->eax = write(args[0], (void *) args[1], args[2]);
       break;
     case SYS_SEEK:
       seek(args[0], args[1]);
@@ -117,7 +130,7 @@ exit(int status)
 int
 exec(const char *cmd_line)
 {
-  return process_execute(cmd_line);
+  return (int) process_execute(cmd_line);
 }
 
 int
@@ -142,7 +155,7 @@ int
 open(const char *file)
 {
   struct file_st *fs = palloc_get_page(0);
-  struct file *f = file_open(file);
+  struct file *f = filesys_open(file);
 
   fs->f = f;
 
@@ -150,9 +163,12 @@ open(const char *file)
   if (list_empty(&t->fList))
     fs->fd = 2;
   else
-    fs->fd = list_entry(list_back(&t->fList), struct file_st, fElem)->fd++;
+  {
+    int tmp_fd = list_entry(list_back(&t->fList), struct file_st, fElem)->fd;
+    fs->fd = tmp_fd;
+  }
 
-  list.push_back(&t->fList, fs->fElem);
+  list_push_back(&t->fList, &fs->fElem);
 
   return fs->fd; 
 }
@@ -160,48 +176,64 @@ open(const char *file)
 int
 filesize(int fd)
 {
-  struct file *f = get_file(fd);
-  return file_length(f); 
+  struct file_st *fs = get_fs(fd);
+  return file_length(fs->f); 
 }
 
 int
 read(int fd, void *buffer, unsigned size)
 {
-  struct file *f = get_file(fd);
-  return file_read(f, buffer, size);
+  if (fd == 0)
+  {
+    int *tmpBuf = (int *) buffer;
+    unsigned i;
+    for (i = 0; i < size; ++i)
+      tmpBuf[i] = input_getc();
+    return size;
+  }
+  struct file_st *fs = get_fs(fd);
+  return file_read(fs->f, buffer, size);
 }
 
 int
 write(int fd, const void *buffer, unsigned size)
 {
-  if (fd == STDOUT_FILENO)
+  if (fd == 1)
   {
     putbuf(buffer, size);
     return size;
   }
-  struct file *f = get_file(fd);
-  return file_write(f, buffer, size);
+  struct file_st *fs = get_fs(fd);
+  return file_write(fs->f, buffer, size);
 }
 
 void
 seek(int fd, unsigned position)
 { 
-  struct file *f = get_file(fd);
-  file_seek(f, position);
+  struct file_st *fs = get_fs(fd);
+  if (fs && fs->f)
+    file_seek(fs->f, position);
 }
 
 unsigned
 tell(int fd)
 {
-  struct file *f = get_file(fd);
-  return file_tell(f);
+  struct file_st *fs = get_fs(fd);
+  if (fs && fs->f)
+    return file_tell(fs->f);
+  return -1;
 }
 
 void
 close(int fd)
 {
-  struct file *f = get_file(fd);
-  file_close(f);
+  struct file_st *fs = get_fs(fd);
+  if (fs && fs->f)
+  {
+    list_remove(&fs->fElem);
+    file_close(fs->f);
+    palloc_free_page(fs);
+  }
 }
 
 
@@ -224,6 +256,7 @@ copy_in (void *dst_, const void *usrc_, size_t size)
    palloc_free_page().
    Truncates the string at PGSIZE bytes in size.
    Call thread_exit() if any of the user accesses are invalid. */
+/*
 static char *
 copy_in_string (const char *us) 
 {
@@ -247,6 +280,7 @@ copy_in_string (const char *us)
   ks[PGSIZE - 1] = '\0';
   return ks;
 }
+*/
 
 /* Copies a byte from user address USRC to kernel address DST.
    USRC must be below PHYS_BASE.
@@ -262,15 +296,19 @@ get_user (uint8_t *dst, const uint8_t *usrc)
 
 /* Returns true if UADDR is a valid, mapped user address,
    false otherwise. */
+/*
 static bool
 verify_user (const void *uaddr) 
 {
   return (uaddr < PHYS_BASE
     && pagedir_get_page (thread_current ()->pagedir, uaddr) != NULL);
 }
+*/
 
-struct file *
-get_file(int fd)
+// This function get file struct
+// given file descriptor fd
+struct file_st *
+get_fs(int fd)
 {
   struct thread *t = thread_current();
   struct file_st *fs;
@@ -282,7 +320,7 @@ get_file(int fd)
     fs = list_entry(e, struct file_st, fElem);
     if (fd == fs->fd)
     {
-      return fs->f;
+      return fs;
     }
   }
   

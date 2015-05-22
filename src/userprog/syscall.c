@@ -8,6 +8,7 @@
 #include "threads/vaddr.h"
 #include "threads/palloc.h"
 #include "devices/shutdown.h"
+#include "devices/input.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
@@ -32,7 +33,7 @@ static void copy_in (void *dst_, const void *usrc_, size_t size);
 static inline bool get_user (uint8_t *dst, const uint8_t *usrc);
 //static bool verify_user (const void *uaddr);
 
-struct file *get_file(int fd);
+struct file_st *get_fs(int fd);
 
 void
 syscall_init (void) 
@@ -175,48 +176,64 @@ open(const char *file)
 int
 filesize(int fd)
 {
-  struct file *f = get_file(fd);
-  return file_length(f); 
+  struct file_st *fs = get_fs(fd);
+  return file_length(fs->f); 
 }
 
 int
 read(int fd, void *buffer, unsigned size)
 {
-  struct file *f = get_file(fd);
-  return file_read(f, buffer, size);
+  if (fd == 0)
+  {
+    int *tmpBuf = (int *) buffer;
+    unsigned i;
+    for (i = 0; i < size; ++i)
+      tmpBuf[i] = input_getc();
+    return size;
+  }
+  struct file_st *fs = get_fs(fd);
+  return file_read(fs->f, buffer, size);
 }
 
 int
 write(int fd, const void *buffer, unsigned size)
 {
-  if (fd == STDOUT_FILENO)
+  if (fd == 1)
   {
     putbuf(buffer, size);
     return size;
   }
-  struct file *f = get_file(fd);
-  return file_write(f, buffer, size);
+  struct file_st *fs = get_fs(fd);
+  return file_write(fs->f, buffer, size);
 }
 
 void
 seek(int fd, unsigned position)
 { 
-  struct file *f = get_file(fd);
-  file_seek(f, position);
+  struct file_st *fs = get_fs(fd);
+  if (fs && fs->f)
+    file_seek(fs->f, position);
 }
 
 unsigned
 tell(int fd)
 {
-  struct file *f = get_file(fd);
-  return file_tell(f);
+  struct file_st *fs = get_fs(fd);
+  if (fs && fs->f)
+    return file_tell(fs->f);
+  return -1;
 }
 
 void
 close(int fd)
 {
-  struct file *f = get_file(fd);
-  file_close(f);
+  struct file_st *fs = get_fs(fd);
+  if (fs && fs->f)
+  {
+    list_remove(&fs->fElem);
+    file_close(fs->f);
+    palloc_free_page(fs);
+  }
 }
 
 
@@ -288,10 +305,10 @@ verify_user (const void *uaddr)
 }
 */
 
-// This function get struct file
+// This function get file struct
 // given file descriptor fd
-struct file *
-get_file(int fd)
+struct file_st *
+get_fs(int fd)
 {
   struct thread *t = thread_current();
   struct file_st *fs;
@@ -303,7 +320,7 @@ get_file(int fd)
     fs = list_entry(e, struct file_st, fElem);
     if (fd == fs->fd)
     {
-      return fs->f;
+      return fs;
     }
   }
   

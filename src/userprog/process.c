@@ -156,7 +156,7 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  //while (1);
+  while (1);
   return -1;
 }
 
@@ -534,6 +534,7 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   size_t ofs = PGSIZE; //##Used in push!
   char * const null = NULL; //##Used for pushing nulls
   char * ptr; //##strtok_r usage
+  char *top;
   //##Probably need some other variables here as well...
   
   //##Parse and put in command line arguments, push each value

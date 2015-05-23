@@ -80,7 +80,7 @@ process_execute (const char *file_name)
   
   //initialize exec
   exec.file_name = file_name;  
-  sema_init(&exec.sema, 1);
+  sema_init(&exec.sema, 0); //Init sema to 0
   exec.success = 0;
 
   //set thread_name to first token in file_name (max length is 16)
@@ -99,6 +99,7 @@ process_execute (const char *file_name)
   if (tid != TID_ERROR) 
   {
     //##Down a semaphore for loading (where should you up it?)
+    // Down here to wait for child. Up in child's Load
     sema_down(&exec.sema);
     //##If program load successfull
     if(exec.success)
@@ -111,7 +112,6 @@ process_execute (const char *file_name)
       }
     else tid = TID_ERROR;
     //may need to change the location of this semaphore
-    sema_up(&exec.sema);
   }
   
   return tid;
@@ -132,6 +132,7 @@ start_process (void * execHelper)
   if_.eflags = FLAG_IF | FLAG_MBS;
   ((struct exec_helper *)execHelper)->success = load (file_name, &if_.eip, &if_.esp);
 
+  sema_up(&((struct exec_helper *)execHelper)->sema);
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!((struct exec_helper *)execHelper)->success) 

@@ -291,20 +291,19 @@ load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file nam
   off_t file_ofs;
   bool success = false;
   char* charPointer = NULL;                  //##Add this for parsing!
-  int i = 0;;
+  int i = 0;
   
+  char cmd_line_cpy[CMD_MAX];
+  strlcpy(cmd_line_cpy, cmd_line, CMD_MAX);
+  strlcpy(file_name, strtok_r(cmd_line_cpy, " ", &charPointer), NAME_MAX + 2);
+
+
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
   
-  //## Use strtok_r to remove file_name from cmd_line
-  //strtok_r modifies input string. Make backup to take the hit
-  char cmd_line_cpy[CMD_MAX];
-  strlcpy(cmd_line_cpy, cmd_line, NAME_MAX + 2);
-  strlcpy(file_name, strtok_r(cmd_line_cpy, " ", &charPointer), NAME_MAX + 2);
-
   /* Open executable file. */
   file = filesys_open (file_name);  //## Set the thread's bin file to this
                                     //as well! It is super helpful to have
@@ -317,7 +316,8 @@ load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file nam
       goto done; 
     }
   //##Disable file write for 'file' here. GO TO BOTTOM. DON'T CHANGE ANYTHING IN THESE IF AND FOR STATEMENTS
-  
+  file_deny_write(file);
+ 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)

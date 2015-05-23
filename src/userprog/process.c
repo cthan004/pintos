@@ -84,8 +84,12 @@ process_execute (const char *file_name)
   exec.success = 0;
 
   //set thread_name to first token in file_name (max length is 16)
-  char *saveptr = NULL;
-  strlcpy(thread_name, strtok_r(exec.file_name, " ", &saveptr), 16);
+  char * saveptr = NULL;
+  //tokenization modifies input string. Create copy to take the hit
+  char file_name_cpy[16];
+  strlcpy(file_name_cpy, exec.file_name, 16);
+
+  strlcpy(thread_name, strtok_r(file_name_cpy, " ", &saveptr), 16);
   
   /*  Create a new thread to execute file_name. */
   //##remove fn_copy, Add exec to the end of these params, a void is 
@@ -118,7 +122,7 @@ process_execute (const char *file_name)
 static void
 start_process (void * execHelper)
 {
-  char *file_name = execHelper->file_name;
+  char *file_name = ((struct exec_helper *)execHelper)->file_name;
   struct intr_frame if_;
 
   /* Initialize interrupt frame and load executable. */
@@ -126,11 +130,11 @@ start_process (void * execHelper)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  execHelper->success = load (file_name, &if_.eip, &if_.esp);
+  ((struct exec_helper *)execHelper)->success = load (file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  if (!execHelper->success) 
+  if (!((struct exec_helper *)execHelper)->success) 
     thread_exit ();
 
   /* Start the user process by simulating a return from an
@@ -295,7 +299,10 @@ load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file nam
   process_activate ();
   
   //## Use strtok_r to remove file_name from cmd_line
-  strlcpy(file_name, strtok_r(cmd_line, " ", charPointer), NAME_MAX + 2);
+  //strtok_r modifies input string. Make backup to take the hit
+  char cmd_line_cpy[CMD_MAX];
+  strlcpy(cmd_line_cpy, cmd_line, NAME_MAX + 2);
+  strlcpy(file_name, strtok_r(cmd_line_cpy, " ", &charPointer), NAME_MAX + 2);
 
   /* Open executable file. */
   file = filesys_open (file_name);  //## Set the thread's bin file to this
@@ -538,12 +545,15 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   
   //##Parse and put in command line arguments, push each value
   //##if any push() returns NULL, return false
-  char * token = strtok_r(cmd_line, " ", &ptr); //command
+  /* strtok modifies input string. Create copy to take the hit */
+  char cmd_line_cpy[CMD_MAX];
+  strlcpy(cmd_line_cpy, cmd_line, CMD_MAX);
+  char * token = strtok_r(cmd_line_cpy, " ", &ptr); //command
   if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
     return false;
   
   /* pushes tokens one by one onto the stack*/
-  for ( ; top != NULL ; token = strtok_r(NULL, " ", ptr))
+  for ( ; top != NULL ; token = strtok_r(NULL, " ", &ptr))
     {
       if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
         return false;

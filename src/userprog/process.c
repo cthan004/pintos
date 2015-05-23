@@ -84,9 +84,18 @@ process_execute (const char *file_name)
   exec.success = 0;
 
   //set thread_name to first token in file_name (max length is 16)
+<<<<<<< HEAD
   char *saveptr, *token;
   token = strtok_r(file_name, " ", &saveptr);
   strlcpy(thread_name, token, 16);
+=======
+  char * saveptr = NULL;
+  //tokenization modifies input string. Create copy to take the hit
+  char file_name_cpy[16];
+  strlcpy(file_name_cpy, exec.file_name, 16);
+
+  strlcpy(thread_name, strtok_r(file_name_cpy, " ", &saveptr), 16);
+>>>>>>> 3f3e60323099ba8c30c25c44f6beadaa579dc13e
   
   /*  Create a new thread to execute file_name. */
   //##remove fn_copy, Add exec to the end of these params, a void is 
@@ -121,7 +130,11 @@ process_execute (const char *file_name)
 static void
 start_process (void *execHelper)
 {
+<<<<<<< HEAD
   char *file_name = ((struct exec_helper *) execHelper)->file_name;
+=======
+  char *file_name = ((struct exec_helper *)execHelper)->file_name;
+>>>>>>> 3f3e60323099ba8c30c25c44f6beadaa579dc13e
   struct intr_frame if_;
 
   /* Initialize interrupt frame and load executable. */
@@ -130,8 +143,11 @@ start_process (void *execHelper)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   ((struct exec_helper *)execHelper)->success = load (file_name, &if_.eip, &if_.esp);
+<<<<<<< HEAD
 
   sema_up(&((struct exec_helper *)execHelper)->sema);
+=======
+>>>>>>> 3f3e60323099ba8c30c25c44f6beadaa579dc13e
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -318,7 +334,14 @@ load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file nam
   process_activate ();
  
   //## Use strtok_r to remove file_name from cmd_line
+<<<<<<< HEAD
   strlcpy(file_name, strtok_r(tmpstr, " ", &charPointer), NAME_MAX + 2);
+=======
+  //strtok_r modifies input string. Make backup to take the hit
+  char cmd_line_cpy[CMD_MAX];
+  strlcpy(cmd_line_cpy, cmd_line, NAME_MAX + 2);
+  strlcpy(file_name, strtok_r(cmd_line_cpy, " ", &charPointer), NAME_MAX + 2);
+>>>>>>> 3f3e60323099ba8c30c25c44f6beadaa579dc13e
 
   /* Open executable file. */
   file = filesys_open (file_name);  //## Set the thread's bin file to this
@@ -567,6 +590,7 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   printf("\n CMD_LINE: %s \n", cmd_line);
   //##Parse and put in command line arguments, push each value
   //##if any push() returns NULL, return false
+<<<<<<< HEAD
   for (token = strtok_r((char *) cmd_line, " ", &ptr);
        token != NULL;
        token = strtok_r(NULL, " ", &ptr) )
@@ -605,6 +629,17 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   
   /* pushes tokens one by one onto the stack*//*
   for ( ; top != NULL ; token = strtok_r(NULL, " ", ptr))
+=======
+  /* strtok modifies input string. Create copy to take the hit */
+  char cmd_line_cpy[CMD_MAX];
+  strlcpy(cmd_line_cpy, cmd_line, CMD_MAX);
+  char * token = strtok_r(cmd_line_cpy, " ", &ptr); //command
+  if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+    return false;
+  
+  /* pushes tokens one by one onto the stack*/
+  for ( ; top != NULL ; token = strtok_r(NULL, " ", &ptr))
+>>>>>>> 3f3e60323099ba8c30c25c44f6beadaa579dc13e
     {
       if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
         return false;

@@ -3,6 +3,9 @@
 
 #include "threads/thread.h"
 
+//maxmimum length of of a command
+#define CMD_MAX 4096
+
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);
 void process_exit (void);

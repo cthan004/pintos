@@ -563,28 +563,40 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
         return false;
   //end pushing values
   
+  int argc = cnt + 1;
+
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false
-  if(NULL == push (kpage, &ofs, null, 1))
+  if(NULL == push (kpage, &ofs, &null, 1))
     return false;
   
-  //push the addresses of the values in reverse order (right -> left)
+    
+  //##Push argv addresses (i.e. for the cmd_line added above) in reverse order
+  //##See the stack example on documentation for what "reversed" means
+  for ( ; cnt != -1 ; cnt--) //conditional is -1 because we include argv[0]
+    {
+      if ( NULL == push (kpage, &ofs, &(argv[cnt]), 1) )
+        return false;
+    }
   
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false
-  
-
-  
-  //##Push argv addresses (i.e. for the cmd_line added above) in reverse order
-  //##See the stack example on documentation for what "reversed" means
+  if ( NULL == push (kpage, &ofs, &null, 1) )
+    return false;
+ 
   //##Push argc, how can we determine argc?
+  push (kpage, &ofs, argc, 1);
   //##Push &null
+  push (kpage, &ofs, &null, 1);
   //##Should you check for NULL returns?
   
+ 
+
   //##Set the stack pointer. IMPORTANT! Make sure you use the right value here...
   *esp = upage + ofs;
   
   //##If you made it this far, everything seems good, return true
+  return true;
 }
 
 

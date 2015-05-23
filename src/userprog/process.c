@@ -79,13 +79,14 @@ process_execute (const char *file_name)
   tid_t tid;
   
   //initialize exec
-  exec.file_name = file_name;  
-  sema_init(&exec.sema, 1);
+  strlcpy(exec.file_name, file_name, strlen(file_name)+1 );  
+  sema_init(&exec.sema, 0);
   exec.success = 0;
 
   //set thread_name to first token in file_name (max length is 16)
-  char *saveptr = NULL;
-  strlcpy(thread_name, strtok_r(exec.file_name, " ", &saveptr), 16);
+  char *saveptr, *token;
+  token = strtok_r(file_name, " ", &saveptr);
+  strlcpy(thread_name, token, 16);
   
   /*  Create a new thread to execute file_name. */
   //##remove fn_copy, Add exec to the end of these params, a void is 
@@ -103,11 +104,13 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
-        
+        struct child c;
+        c.id = tid;
+        list_push_back(&thread_current()->child_list, &c.cElem);
       }
     else tid = TID_ERROR;
     //may need to change the location of this semaphore
-    sema_up(&exec.sema);
+    //sema_up(&exec.sema);
   }
   
   return tid;
@@ -116,9 +119,9 @@ process_execute (const char *file_name)
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void * execHelper)
+start_process (void *execHelper)
 {
-  char *file_name = execHelper->file_name;
+  char *file_name = ((struct exec_helper *) execHelper)->file_name;
   struct intr_frame if_;
 
   /* Initialize interrupt frame and load executable. */
@@ -126,11 +129,13 @@ start_process (void * execHelper)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  execHelper->success = load (file_name, &if_.eip, &if_.esp);
+  ((struct exec_helper *)execHelper)->success = load (file_name, &if_.eip, &if_.esp);
+
+  sema_up(&((struct exec_helper *)execHelper)->sema);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  if (!execHelper->success) 
+  if (!((struct exec_helper *)execHelper)->success) 
     thread_exit ();
 
   /* Start the user process by simulating a return from an
@@ -155,7 +160,21 @@ start_process (void * execHelper)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  while (1);
+  struct thread *t = thread_current();
+  struct child *c;
+  struct list_elem *e;
+  for (e = list_begin(&t->child_list);
+       e != list_end(&t->child_list);
+       e = e->next)
+  {
+    c = list_entry(e, struct child, cElem);
+    if (c->id == child_tid)
+    {
+      struct thread *tC = get_thread(child_tid);
+      while (tC->status != THREAD_DYING);
+      return tC->status; 
+    }
+  }
   return -1;
 }
 
@@ -166,6 +185,8 @@ process_exit (void)
   struct thread *cur = thread_current ();
   uint32_t *pd;
 
+  cur->status = THREAD_DYING;
+  //file_close(cur->name);
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
@@ -285,17 +306,19 @@ load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file nam
   struct file *file = NULL;
   off_t file_ofs;
   bool success = false;
-  char* charPointer = NULL;                  //##Add this for parsing!
-  int i = 0;;
+  char* charPointer;                  //##Add this for parsing!
+  int i = 0;
+  char tmpstr[strlen(cmd_line)+1];
+  strlcpy(tmpstr, cmd_line, strlen(cmd_line)+1 );
   
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
-  
+ 
   //## Use strtok_r to remove file_name from cmd_line
-  strlcpy(file_name, strtok_r(cmd_line, " ", charPointer), NAME_MAX + 2);
+  strlcpy(file_name, strtok_r(tmpstr, " ", &charPointer), NAME_MAX + 2);
 
   /* Open executable file. */
   file = filesys_open (file_name);  //## Set the thread's bin file to this
@@ -309,7 +332,8 @@ load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file nam
       goto done; 
     }
   //##Disable file write for 'file' here. GO TO BOTTOM. DON'T CHANGE ANYTHING IN THESE IF AND FOR STATEMENTS
-  
+  file_deny_write(file);
+
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)
@@ -521,7 +545,8 @@ setup_stack (void **esp, const char * cmd_line)//##Add cmd_line here
       //##Change the first parameter to upage since its the same thing.
       success = install_page (upage, kpage, true); 
       if (success)
-        success = setup_stack_helper(cmd_line, kpage, upage, esp);
+        *esp = PHYS_BASE - 12;
+        //success = setup_stack_helper(cmd_line, kpage, upage, esp);
       else
         palloc_free_page (kpage);
     }
@@ -532,23 +557,59 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
 {
   size_t ofs = PGSIZE; //##Used in push!
   char * const null = NULL; //##Used for pushing nulls
-  char * ptr; //##strtok_r usage
-  char *top;
+  char *token, *ptr; //##strtok_r usage
+  char *argv[64];
+  int argc = 0;
+  void *uarg = kpage;
+  void *karg;
   //##Probably need some other variables here as well...
   
+  printf("\n CMD_LINE: %s \n", cmd_line);
   //##Parse and put in command line arguments, push each value
   //##if any push() returns NULL, return false
-  char * token = strtok_r(cmd_line, " ", &ptr); //command
-  if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
-    return false;
+  for (token = strtok_r((char *) cmd_line, " ", &ptr);
+       token != NULL;
+       token = strtok_r(NULL, " ", &ptr) )
+  {
+    argv[argc] = token;
+    ++argc;
+  }
+  int i = argc-1;
+  for (; i >= 0; --i)
+  {
+    karg = push(kpage, &ofs, argv[i], strlen(argv[i])+1 );
+    if (!karg) return false;
+    uarg = upage + ((uint8_t *)karg - kpage);
+  }
+  hex_dump(ofs, karg, 128, true);
+
+  karg = push(kpage, &ofs, &null, sizeof(null));
+    if (!karg) return false;
+  argv[argc] = 0;
+  int j = argc;
+  for (; j >= 0; --j)
+  {
+    karg = push(kpage, &ofs, &argv[j], sizeof(char*));
+    if (!karg) return false;
+  }
+  token = &ofs;
+  karg = push(kpage, &ofs, &token, sizeof(char**));
+    if (!karg) return false;
+  karg = push(kpage, &ofs, &argc, sizeof(argc));
+    if (!karg) return false;
+  karg = push(kpage, &ofs, &null, sizeof(null));
+    if (!karg) return false;
+  hex_dump(ofs, karg,128 , true);
+  //if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+    //return false;
   
-  /* pushes tokens one by one onto the stack*/
+  /* pushes tokens one by one onto the stack*//*
   for ( ; top != NULL ; token = strtok_r(NULL, " ", ptr))
     {
       if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
         return false;
       top = token;
-    }
+    }*/
   //end pushing values
 
   //push the addresses of the values in reverse order (right -> left)
@@ -565,7 +626,9 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   //##Set the stack pointer. IMPORTANT! Make sure you use the right value here...
   *esp = upage + ofs;
   
+  printf("\n CMD_LINE234: %s \n", cmd_line);
   //##If you made it this far, everything seems good, return true
+  return true;
 }
 
 

@@ -537,34 +537,43 @@ setup_stack (void **esp, const char * cmd_line)//##Add cmd_line here
 
 static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t * upage, void ** esp) 
 {
-  size_t ofs = PGSIZE; //##Used in push!
+  size_t ofs = PGSIZE;      //##Used in push!
   char * const null = NULL; //##Used for pushing nulls
-  char * ptr; //##strtok_r usage
-  char *top;
+  char * ptr;               //##strtok_r usage
+  char * argv[MAX_ARGS];
+  int cnt;
   //##Probably need some other variables here as well...
   
-  //##Parse and put in command line arguments, push each value
-  //##if any push() returns NULL, return false
   /* strtok modifies input string. Create copy to take the hit */
   char cmd_line_cpy[CMD_MAX];
   strlcpy(cmd_line_cpy, cmd_line, CMD_MAX);
-  char * token = strtok_r(cmd_line_cpy, " ", &ptr); //command
-  if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
+
+  //##Parse and put in command line arguments, push each value
+  //##if any push() returns NULL, return false
+  cnt = 0;
+  /* pushes tokens one by one onto the stack*/
+  for ( argv[cnt] = strtok_r(cmd_line_cpy, " ", &ptr);
+        argv[cnt] != NULL ; argv[cnt] = strtok_r(NULL, " ", &ptr))
+    {
+      if (NULL == push (kpage, &ofs, argv[cnt], strlen(argv[cnt]) + 1))
+        return false;
+      cnt++;
+    }
+  if (NULL == push (kpage, &ofs, argv[cnt], strlen(argv[cnt]) + 1))
+        return false;
+  //end pushing values
+  
+  //##push() a null (more precisely &null).
+  //##if push returned NULL, return false
+  if(NULL == push (kpage, &ofs, null, 1))
     return false;
   
-  /* pushes tokens one by one onto the stack*/
-  for ( ; top != NULL ; token = strtok_r(NULL, " ", &ptr))
-    {
-      if (NULL == push (kpage, &ofs, token, strlen(token) + 1))
-        return false;
-      top = token;
-    }
-  //end pushing values
-
   //push the addresses of the values in reverse order (right -> left)
+  
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false
   
+
   
   //##Push argv addresses (i.e. for the cmd_line added above) in reverse order
   //##See the stack example on documentation for what "reversed" means

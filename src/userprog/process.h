@@ -5,6 +5,9 @@
 
 //maxmimum length of of a command
 #define CMD_MAX 4096
+//maximum possible number of arguments
+#define MAX_ARGS 2048
+
 
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);

@@ -81,7 +81,7 @@ process_execute (const char *file_name)
   //initialize exec
   exec.file_name = file_name;  
   sema_init(&exec.sema, 0); //Init sema to 0
-  exec.success = 0;
+  exec.success = false;
 
   //set thread_name to first token in file_name (max length is 16)
   char * saveptr = NULL;

@@ -86,8 +86,8 @@ process_execute (const char *file_name)
   //set thread_name to first token in file_name (max length is 16)
   char * saveptr = NULL;
   //tokenization modifies input string. Create copy to take the hit
-  char file_name_cpy[16];
-  strlcpy(file_name_cpy, exec.file_name, 16);
+  char file_name_cpy[strlen(exec.file_name)+1];
+  strlcpy(file_name_cpy, exec.file_name, strlen(exec.file_name)+1);
 
   strlcpy(thread_name, strtok_r(file_name_cpy, " ", &saveptr), 16);
   

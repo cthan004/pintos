@@ -132,6 +132,11 @@ exit(int status)
 int
 exec(const char *cmd_line)
 {
+  if (!verify_user(cmd_line))
+  {
+    exit(-1);
+    return -1;
+  }
   return (int) process_execute(cmd_line);
 }
 
@@ -144,22 +149,36 @@ wait(int pid)
 bool
 create(const char *file, unsigned initial_size)
 {
-  if (!verify_user(file)) exit(-1);
+  if (!verify_user(file+initial_size))
+  {
+    exit(-1);
+    return false;
+  }
   return filesys_create(file, initial_size);
 }
 
 bool
 remove(const char *file)
 {
+  if (!verify_user(file))
+  {
+    exit(-1);
+    return false;
+  }
   return filesys_remove(file);
 }
 
 int
 open(const char *file)
 {
-  if (!verify_user(file)) exit(-1);
+  if (!verify_user(file))
+  {
+    exit(-1);
+    return -1;
+  }
   struct file_st *fs = palloc_get_page(0);
   struct file *f = filesys_open(file);
+  if (!f) return -1;
 
   fs->f = f;
 
@@ -169,7 +188,7 @@ open(const char *file)
   else
   {
     int tmp_fd = list_entry(list_back(&t->fList), struct file_st, fElem)->fd;
-    fs->fd = tmp_fd;
+    fs->fd = tmp_fd+1;
   }
 
   list_push_back(&t->fList, &fs->fElem);
@@ -181,12 +200,18 @@ int
 filesize(int fd)
 {
   struct file_st *fs = get_fs(fd);
-  return file_length(fs->f); 
+  if (!fs || !fs->f) return -1;
+  return file_length(fs->f);
 }
 
 int
 read(int fd, void *buffer, unsigned size)
 {
+  if (!verify_user(buffer+size))
+  {
+    exit(-1);
+    return -1;
+  }
   if (fd == 0)
   {
     int *tmpBuf = (int *) buffer;
@@ -196,18 +221,25 @@ read(int fd, void *buffer, unsigned size)
     return size;
   }
   struct file_st *fs = get_fs(fd);
+  if (!fs || !fs->f) return -1;
   return file_read(fs->f, buffer, size);
 }
 
 int
 write(int fd, const void *buffer, unsigned size)
 {
+  if (!verify_user(buffer+size))
+  {
+    exit(-1);
+    return -1;
+  }
   if (fd == 1)
   {
     putbuf(buffer, size);
     return size;
   }
   struct file_st *fs = get_fs(fd);
+  if (!fs || !fs->f) return -1;
   return file_write(fs->f, buffer, size);
 }
 

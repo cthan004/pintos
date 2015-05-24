@@ -161,20 +161,32 @@ start_process (void * execHelper)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
-  //while (1);
-  return -1;
+  struct thread *p = thread_current();
+  struct list_elem *e = NULL;
+  struct child_st * c = NULL;
 
-  //if(child_tid == TID_ERROR
-  //   || !child of the calling process
-  //   || process wait was already called for given TID)
-    //return -1;
-  //else if(terminated by kernel)
+  for(e = list_begin(p->cList); e != list_end(p->cList); e = list_next(p->cList))
+    {
+      struct child_st * curr = list_entry(e, struct child_st, cElem);
+      if (child_tid == curr->cid) c = curr;
+    }
+  
+  if(child_tid == TID_ERROR /* tid is invalid */
+     || c == NULL           /* not a child of calling process */
+     || c->wait)            /* already had wait called */
+    return -1;
+  
+  return -1; // stub return until rest of code is done
+  
+  //while(child is alive) //waits for child to die
+
+  //if(child terminated by kernel)
     //return -1;
   //else 
-    //return exit status of TID
-
+    //return exit status of child
+  
 }
 
 /* Free the current process's resources. */

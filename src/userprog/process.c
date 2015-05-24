@@ -538,10 +538,13 @@ setup_stack (void **esp, const char * cmd_line)//##Add cmd_line here
 
 static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t * upage, void ** esp) 
 {
-  size_t ofs = PGSIZE;      //##Used in push!
-  char * const null = NULL; //##Used for pushing nulls
-  char * ptr;               //##strtok_r usage
-  char * argv[MAX_ARGS];
+  size_t ofs = PGSIZE;      //Used in push!
+  char * const null = NULL; //Used for pushing nulls
+  char * ptr;               //for strtok_r usage
+  char * argv[MAX_ARGS];    //argument vector
+  void * uargv[MAX_ARGS];   //uarg vector
+  void * karg;              //used to store return value of push
+  void * uarg;              //used to store the calculated uarg
 
   int i;
   int argc;
@@ -563,44 +566,45 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   //##if any push() returns NULL, return false
   /* This for loop pushes token values one by one onto the stack in
    * backwards order. */
-  for ( i = argc - 1; i >= 0 ; i--)
+  for ( i = argc - 1; i >= 0; i--)
     {
-      if (NULL == push (kpage, &ofs, argv[i], strlen(argv[i]) + 1))
-        return false;
+      karg = push (kpage, &ofs, argv[i], strlen(argv[i]) + 1);
+      if (karg == NULL) return false;
+      else
+        {
+          uargv[i] = upage + (karg - (char *) kpage);
+        }
     }
-  
   
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false
-  if(NULL == push (kpage, &ofs, &null, 1))
+  if(NULL == push (kpage, &ofs, &null, 4))
     return false;
-  
     
   //##Push argv addresses (i.e. for the cmd_line added above) in reverse order
   //##See the stack example on documentation for what "reversed" means
-  for ( i = argc; i >= 0 ; i--) 
+  for ( i = argc - 1; i >= 0; i--) 
     {
-      if ( NULL == push (kpage, &ofs, &(argv[i]), 1) )
-        return false;
+      karg = push (kpage, &ofs, &(uargv[i]), 4);
     }
   
-  //##push() a null (more precisely &null).
-  //##if push returned NULL, return false
-  if ( NULL == push (kpage, &ofs, &null, 1) )
-    return false;
- 
+  //Push address to argv
+  uarg = upage + (karg - (char *) kpage);
+  karg = push (kpage, &ofs, &uarg, 4);
+  if ( NULL == karg ) return false;
+
   //##Push argc, how can we determine argc?
-  if ( NULL == push (kpage, &ofs, &argc, 1) )
+  if ( NULL == push (kpage, &ofs, &argc, 4) )
     return false;
     
   //##Push &null
-  if ( NULL == push (kpage, &ofs, &null, 1) )
-    return false;
+  karg = push (kpage, &ofs, &null, 4);
+  if (karg == NULL) return false;
   //##Should you check for NULL returns?
   
   
   //##Set the stack pointer. IMPORTANT! Make sure you use the right value here...
-  *esp = upage + ofs;
+  *esp = upage + (karg - (char *) kpage);
   
   //##If you made it this far, everything seems good, return true
   return true;

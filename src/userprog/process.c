@@ -560,7 +560,7 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   for ( argv[i] = strtok_r(cmd_line_cpy, " ", &ptr); 
         argv[i] != NULL;
         argv[++i] = strtok_r (NULL, " ", &ptr)){}
-  argc = i + 1;
+  argc = i;
 
   //##push each value
   //##if any push() returns NULL, return false
@@ -602,6 +602,7 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   if (karg == NULL) return false;
   //##Should you check for NULL returns?
   
+  hex_dump(ofs, karg, 128, true);
   
   //##Set the stack pointer. IMPORTANT! Make sure you use the right value here...
   *esp = upage + (karg - (char *) kpage);

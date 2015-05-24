@@ -4,9 +4,9 @@
 #include "threads/thread.h"
 
 //maxmimum length of of a command
-#define CMD_MAX 4096
+#define CMD_MAX 256
 //maximum possible number of arguments
-#define MAX_ARGS 2048
+#define MAX_ARGS 128
 
 
 tid_t process_execute (const char *file_name);

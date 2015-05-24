@@ -47,7 +47,7 @@ syscall_handler (struct intr_frame *f)
   unsigned callNum;
   int args[3];
   int numOfArgs;
-	
+
   //##Get syscall number
   copy_in (&callNum, f->esp, sizeof callNum);
 
@@ -248,7 +248,8 @@ copy_in (void *dst_, const void *usrc_, size_t size)
            
   for (; size > 0; size--, dst++, usrc++) 
     if (usrc >= (uint8_t *) PHYS_BASE || !get_user (dst, usrc)) 
-      thread_exit ();
+      exit(-1);
+      //thread_exit ();
 }
 
 /* Creates a copy of user string US in kernel memory

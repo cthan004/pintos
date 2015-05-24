@@ -122,7 +122,8 @@ process_execute (const char *file_name)
 static void
 start_process (void * execHelper)
 {
-  char *file_name = ((struct exec_helper *)execHelper)->file_name;
+  struct exec_helper * exec = execHelper;
+  char *file_name = exec->file_name;
   struct intr_frame if_;
 
   /* Initialize interrupt frame and load executable. */
@@ -543,7 +544,7 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   char * ptr;               //for strtok_r usage
   char * argv[MAX_ARGS];    //argument vector
   void * uargv[MAX_ARGS];   //uarg vector
-  void * karg;              //used to store return value of push
+  char * karg;              //used to store return value of push
   void * uarg;              //used to store the calculated uarg
 
   int i;
@@ -556,10 +557,9 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   
   //##Parse and put in command line arguments,
   i = 0;
-  char * argptr = NULL;
-  for ( argv[i] = strtok_r(cmd_line_cpy, " ", &argptr); 
+  for ( argv[i] = strtok_r(cmd_line_cpy, " ", &ptr); 
         argv[i] != NULL;
-        argv[++i] = strtok(NULL, " ", &argptr)){}
+        argv[++i] = strtok_r (NULL, " ", &ptr)){}
   argc = i + 1;
 
   //##push each value
@@ -572,7 +572,7 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
       if (karg == NULL) return false;
       else
         {
-          uargv[i] = upage + (karg - (char *) kpage);
+          uargv[i] = upage + (karg - (char *)kpage);
         }
     }
   

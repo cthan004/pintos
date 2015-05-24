@@ -471,6 +471,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   
   list_init(&t->fList);
+  list_init(&t->cList);
   
   list_push_back (&all_list, &t->allelem);
 

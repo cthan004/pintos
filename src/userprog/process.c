@@ -108,7 +108,10 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
-        
+        struct child_st cs;
+        cs.cid = tid;
+        cs.wait = false;
+        list_push_back(&thread_current()->cList, &cs.cElem);
       }
     else tid = TID_ERROR;
   }
@@ -122,7 +125,7 @@ static void
 start_process (void * execHelper)
 {
   struct exec_helper * exec = execHelper;
-  char *file_name = exec->file_name;
+  const char *file_name = exec->file_name;
   struct intr_frame if_;
 
   /* Initialize interrupt frame and load executable. */
@@ -134,7 +137,7 @@ start_process (void * execHelper)
 
   sema_up(&exec->sema);
   /* If load failed, quit. */
-  palloc_free_page (file_name);
+  //palloc_free_page (file_name);
   if (!(exec->success))
     thread_exit ();
 
@@ -160,7 +163,7 @@ start_process (void * execHelper)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  while (1);
+  //while (1);
   return -1;
 }
 
@@ -543,7 +546,7 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   char * ptr;               //for strtok_r usage
   char * argv[MAX_ARGS];    //argument vector
   void * uargv[MAX_ARGS];   //uarg vector
-  char * karg;              //used to store return value of push
+  char * karg = NULL;              //used to store return value of push
   void * uarg;              //used to store the calculated uarg
 
   int i;
@@ -600,8 +603,6 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   karg = push (kpage, &ofs, &null, 4);
   if (karg == NULL) return false;
   //##Should you check for NULL returns?
-  
-  hex_dump(ofs, karg, 128, true);
   
   //##Set the stack pointer. IMPORTANT! Make sure you use the right value here...
   *esp = upage + (karg - (char *) kpage);

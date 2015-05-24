@@ -165,6 +165,16 @@ process_wait (tid_t child_tid UNUSED)
 {
   //while (1);
   return -1;
+
+  //if(child_tid == TID_ERROR
+  //   || !child of the calling process
+  //   || process wait was already called for given TID)
+    //return -1;
+  //else if(terminated by kernel)
+    //return -1;
+  //else 
+    //return exit status of TID
+
 }
 
 /* Free the current process's resources. */

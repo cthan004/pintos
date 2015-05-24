@@ -33,7 +33,7 @@ static char *copy_in_string (const char *us);
 static inline bool get_user (uint8_t *dst, const uint8_t *usrc);
 static bool verify_user (const void *uaddr);
 
-struct file_st *get_fs(int fd);
+static struct file_st *get_fs(int fd);
 
 void
 syscall_init (void) 
@@ -84,7 +84,7 @@ syscall_handler (struct intr_frame *f)
       f->eax = wait(args[0]);
       break;
     case SYS_CREATE:
-      f->eax = create(args[0], args[1]);
+      f->eax = create((const char *)args[0], args[1]);
       break;
     case SYS_REMOVE:
       f->eax = remove( (const char *) args[0]);
@@ -144,7 +144,7 @@ wait(int pid)
 bool
 create(const char *file, unsigned initial_size)
 {
-  if (!file || !is_user_vaddr(file) || file < (void *)CODE_SEG_BOTTOM) exit(-1);
+  if (!verify_user(file)) exit(-1);
   return filesys_create(file, initial_size);
 }
 
@@ -311,7 +311,7 @@ verify_user (const void *uaddr)
 
 // This function get file struct
 // given file descriptor fd
-struct file_st *
+static struct file_st *
 get_fs(int fd)
 {
   struct thread *t = thread_current();

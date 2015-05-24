@@ -542,30 +542,34 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   char * const null = NULL; //##Used for pushing nulls
   char * ptr;               //##strtok_r usage
   char * argv[MAX_ARGS];
-  int cnt;
+
+  int i;
+  int argc;
   //##Probably need some other variables here as well...
   
   /* strtok modifies input string. Create copy to take the hit */
   char cmd_line_cpy[CMD_MAX];
   strlcpy(cmd_line_cpy, cmd_line, CMD_MAX);
-
-  //##Parse and put in command line arguments, push each value
-  //##if any push() returns NULL, return false
-  cnt = 0;
-  /* pushes tokens one by one onto the stack*/
-  for ( argv[cnt] = strtok_r(cmd_line_cpy, " ", &ptr);
-        argv[cnt] != NULL ; argv[cnt] = strtok_r(NULL, " ", &ptr))
-    {
-      if (NULL == push (kpage, &ofs, argv[cnt], strlen(argv[cnt]) + 1))
-        return false;
-      cnt++;
-    }
-  if (NULL == push (kpage, &ofs, argv[cnt], strlen(argv[cnt]) + 1))
-        return false;
-  //end pushing values
   
-  int argc = cnt + 1;
+  //##Parse and put in command line arguments,
+  i = 0;
+  char * argptr = NULL;
+  for ( argv[i] = strtok_r(cmd_line_cpy, " ", &argptr); 
+        argv[i] != NULL;
+        argv[++i] = strtok(NULL, " ", &argptr)){}
+  argc = i + 1;
 
+  //##push each value
+  //##if any push() returns NULL, return false
+  /* This for loop pushes token values one by one onto the stack in
+   * backwards order. */
+  for ( i = argc - 1; i >= 0 ; i--)
+    {
+      if (NULL == push (kpage, &ofs, argv[i], strlen(argv[i]) + 1))
+        return false;
+    }
+  
+  
   //##push() a null (more precisely &null).
   //##if push returned NULL, return false
   if(NULL == push (kpage, &ofs, &null, 1))
@@ -574,9 +578,9 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
     
   //##Push argv addresses (i.e. for the cmd_line added above) in reverse order
   //##See the stack example on documentation for what "reversed" means
-  for ( ; cnt != -1 ; cnt--) //conditional is -1 because we include argv[0]
+  for ( i = argc; i >= 0 ; i--) 
     {
-      if ( NULL == push (kpage, &ofs, &(argv[cnt]), 1) )
+      if ( NULL == push (kpage, &ofs, &(argv[i]), 1) )
         return false;
     }
   
@@ -586,13 +590,15 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
     return false;
  
   //##Push argc, how can we determine argc?
-  push (kpage, &ofs, argc, 1);
+  if ( NULL == push (kpage, &ofs, &argc, 1) )
+    return false;
+    
   //##Push &null
-  push (kpage, &ofs, &null, 1);
+  if ( NULL == push (kpage, &ofs, &null, 1) )
+    return false;
   //##Should you check for NULL returns?
   
- 
-
+  
   //##Set the stack pointer. IMPORTANT! Make sure you use the right value here...
   *esp = upage + ofs;
   

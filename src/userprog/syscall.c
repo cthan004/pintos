@@ -149,7 +149,7 @@ wait(int pid)
 bool
 create(const char *file, unsigned initial_size)
 {
-  if (!verify_user(file))
+  if (!verify_user(file+initial_size))
   {
     exit(-1);
     return false;
@@ -207,7 +207,7 @@ filesize(int fd)
 int
 read(int fd, void *buffer, unsigned size)
 {
-  if (!verify_user(buffer))
+  if (!verify_user(buffer+size))
   {
     exit(-1);
     return -1;
@@ -228,7 +228,7 @@ read(int fd, void *buffer, unsigned size)
 int
 write(int fd, const void *buffer, unsigned size)
 {
-  if (!verify_user(buffer))
+  if (!verify_user(buffer+size))
   {
     exit(-1);
     return -1;

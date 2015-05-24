@@ -131,12 +131,12 @@ start_process (void * execHelper)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  ((struct exec_helper *)execHelper)->success = load (file_name, &if_.eip, &if_.esp);
+  exec->success = load (file_name, &if_.eip, &if_.esp);
 
-  sema_up(&((struct exec_helper *)execHelper)->sema);
+  sema_up(&exec->sema);
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  if (!((struct exec_helper *)execHelper)->success) 
+  if (!(exec->success))
     thread_exit ();
 
   /* Start the user process by simulating a return from an

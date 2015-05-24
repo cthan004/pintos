@@ -49,6 +49,7 @@ syscall_handler (struct intr_frame *f)
   int numOfArgs;
 
   //##Get syscall number
+  if (!is_user_vaddr(f->esp) || f->esp < (void *)CODE_SEG_BOTTOM) exit(-1);
   copy_in (&callNum, f->esp, sizeof callNum);
 
   //##Using the number find out which system call is being used

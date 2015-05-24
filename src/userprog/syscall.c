@@ -29,9 +29,9 @@ void close(int fd);
 
 static void syscall_handler (struct intr_frame *);
 static void copy_in (void *dst_, const void *usrc_, size_t size);
-//static char *copy_in_string (const char *us);
+static char *copy_in_string (const char *us);
 static inline bool get_user (uint8_t *dst, const uint8_t *usrc);
-//static bool verify_user (const void *uaddr);
+static bool verify_user (const void *uaddr);
 
 struct file_st *get_fs(int fd);
 
@@ -49,7 +49,8 @@ syscall_handler (struct intr_frame *f)
   int numOfArgs;
 
   //##Get syscall number
-  if (!is_user_vaddr(f->esp) || f->esp < (void *)CODE_SEG_BOTTOM) exit(-1);
+  //if (!is_user_vaddr(f->esp) || f->esp < (void *)CODE_SEG_BOTTOM) exit(-1);
+  if (!verify_user(f->esp)) exit(-1);
   copy_in (&callNum, f->esp, sizeof callNum);
 
   //##Using the number find out which system call is being used
@@ -83,7 +84,7 @@ syscall_handler (struct intr_frame *f)
       f->eax = wait(args[0]);
       break;
     case SYS_CREATE:
-      f->eax = create( (const char *) args[0], args[1]);
+      f->eax = create(args[0], args[1]);
       break;
     case SYS_REMOVE:
       f->eax = remove( (const char *) args[0]);
@@ -143,6 +144,7 @@ wait(int pid)
 bool
 create(const char *file, unsigned initial_size)
 {
+  if (!file || !is_user_vaddr(file) || file < (void *)CODE_SEG_BOTTOM) exit(-1);
   return filesys_create(file, initial_size);
 }
 
@@ -258,7 +260,7 @@ copy_in (void *dst_, const void *usrc_, size_t size)
    palloc_free_page().
    Truncates the string at PGSIZE bytes in size.
    Call thread_exit() if any of the user accesses are invalid. */
-/*
+
 static char *
 copy_in_string (const char *us) 
 {
@@ -282,7 +284,7 @@ copy_in_string (const char *us)
   ks[PGSIZE - 1] = '\0';
   return ks;
 }
-*/
+
 
 /* Copies a byte from user address USRC to kernel address DST.
    USRC must be below PHYS_BASE.
@@ -298,14 +300,14 @@ get_user (uint8_t *dst, const uint8_t *usrc)
 
 /* Returns true if UADDR is a valid, mapped user address,
    false otherwise. */
-/*
+
 static bool
 verify_user (const void *uaddr) 
 {
   return (uaddr < PHYS_BASE
     && pagedir_get_page (thread_current ()->pagedir, uaddr) != NULL);
 }
-*/
+
 
 // This function get file struct
 // given file descriptor fd

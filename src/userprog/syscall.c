@@ -157,6 +157,7 @@ remove(const char *file)
 int
 open(const char *file)
 {
+  if (!verify_user(file)) exit(-1);
   struct file_st *fs = palloc_get_page(0);
   struct file *f = filesys_open(file);
 

@@ -135,7 +135,7 @@ start_process (void * execHelper)
 
   sema_up(&exec->sema);
   /* If load failed, quit. */
-  palloc_free_page (file_name);
+  //palloc_free_page (file_name);
   if (!(exec->success))
     thread_exit ();
 
@@ -161,7 +161,7 @@ start_process (void * execHelper)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  while (1);
+  //while (1);
   return -1;
 }
 
@@ -601,8 +601,6 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   karg = push (kpage, &ofs, &null, 4);
   if (karg == NULL) return false;
   //##Should you check for NULL returns?
-  
-  hex_dump(ofs, karg, 128, true);
   
   //##Set the stack pointer. IMPORTANT! Make sure you use the right value here...
   *esp = upage + (karg - (char *) kpage);

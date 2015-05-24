@@ -111,7 +111,6 @@ process_execute (const char *file_name)
         
       }
     else tid = TID_ERROR;
-    //may need to change the location of this semaphore
   }
   
   return tid;

@@ -161,7 +161,7 @@ start_process (void * execHelper)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
   //printf("creating variables\n");
   struct thread *p = thread_current();
@@ -184,8 +184,11 @@ process_wait (tid_t child_tid UNUSED)
   
   return -1; // stub return until rest of code is done
   
-  //while(child is alive) //waits for child to die
+  c->wait = true;
 
+  //while(child is alive) //waits for child to die
+  
+  c->wait = false;
   //if(child terminated by kernel)
     //return -1;
   //else 

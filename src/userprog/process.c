@@ -80,7 +80,9 @@ process_execute (const char *file_name)
   tid_t tid;
   
   //initialize exec
-  exec.file_name = file_name;  
+  //exec.file_name = file_name;  
+  exec.file_name = palloc_get_page(0);
+  strlcpy(exec.file_name, file_name, PGSIZE);  
   sema_init(&exec.sema, 0); //Init sema to 0
   exec.success = false;
 
@@ -109,7 +111,7 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
-        // Move to thread.c
+        palloc_free_page(exec.file_name);
       }
     else tid = TID_ERROR;
   }
@@ -133,7 +135,7 @@ start_process (void * execHelper)
   if_.eflags = FLAG_IF | FLAG_MBS;
   exec->success = load (file_name, &if_.eip, &if_.esp);
 
-  if(exec->success) sema_up(&exec->sema);
+  sema_up(&exec->sema);
   /* If load failed, quit. */
   //palloc_free_page (file_name);
   if (!(exec->success))

@@ -206,6 +206,17 @@ thread_create (const char *name, int priority,
 
   intr_set_level (old_level);
 
+  // Create child struct
+  struct child_st *cs = palloc_get_page(0);
+  cs->cid = t->tid;
+  cs->wait = false;
+  cs->exit = false;
+  list_push_back(&thread_current()->cList, &cs->cElem);
+
+  // Set cp and parent
+  t->cp = cs;
+  t->parent = thread_current()->tid;
+
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -469,7 +480,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-  
+
+  // Initialize list and new variables 
+  t->parent = 0;
+  t->cp = NULL; 
   list_init(&t->fList);
   list_init(&t->cList);
   

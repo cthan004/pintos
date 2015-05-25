@@ -4,7 +4,7 @@
 #include "threads/thread.h"
 
 //maxmimum length of of a command
-#define CMD_MAX 256
+#define CMD_MAX 1024
 //maximum possible number of arguments
 #define MAX_ARGS 128
 

@@ -92,14 +92,10 @@ struct child_st
 {
   tid_t cid;
   bool wait;
+  bool exit;
+  int status;
   struct list_elem cElem;
 };
-
-struct exit_st
-{
-  bool alive;
-  int status;
-}
 
 struct thread
   {
@@ -114,6 +110,8 @@ struct thread
     struct list cList;                  /* Child list */
 
     struct file *exec_file;             // To close in process_exit
+    int parent;                         // Parent tid
+    struct child_st *cp;                // Point to recent child
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */

@@ -11,6 +11,7 @@
 #include "devices/input.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
+#include "threads/synch.h"
 
 // Added System calls
 void halt(void);
@@ -28,8 +29,6 @@ unsigned tell(int fd);
 void close(int fd);
 
 static void syscall_handler (struct intr_frame *);
-static void copy_in (void *dst_, const void *usrc_, size_t size);
-static char *copy_in_string (const char *us);
 static inline bool get_user (uint8_t *dst, const uint8_t *usrc);
 static bool verify_user (const void *uaddr);
 
@@ -126,6 +125,8 @@ exit(int status)
 {
   struct thread *cur = thread_current();
   printf("%s: exit(%d)\n", cur->name, status);
+
+  if (get_thread(cur->parent)) cur->cp->status = status;
 
   // Close all fd in fList
   struct list_elem *e;
@@ -295,8 +296,8 @@ close(int fd)
 /* Copies SIZE bytes from user address USRC to kernel address
    DST.
    Call thread_exit() if any of the user accesses are invalid. */
-static void
-copy_in (void *dst_, const void *usrc_, size_t size) 
+void
+copy_in (void *dst_, const void *usrc_, int size) 
 {
   uint8_t *dst = dst_;
   const uint8_t *usrc = usrc_;
@@ -313,22 +314,24 @@ copy_in (void *dst_, const void *usrc_, size_t size)
    Truncates the string at PGSIZE bytes in size.
    Call thread_exit() if any of the user accesses are invalid. */
 
-static char *
+char *
 copy_in_string (const char *us) 
 {
   char *ks;
   size_t length;
                        
   ks = palloc_get_page (0);
-  if (ks == NULL) 
-    thread_exit ();
+  if (ks == NULL)
+    exit(-1); 
+    //thread_exit ();
                                   
   for (length = 0; length < PGSIZE; length++)
   {
     if (us >= (char *) PHYS_BASE || !get_user (ks + length, us++)) 
     {
       palloc_free_page (ks);
-      thread_exit (); 
+      exit(-1);
+      //thread_exit (); 
     }
     if (ks[length] == '\0') 
       return ks;

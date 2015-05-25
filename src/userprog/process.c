@@ -19,6 +19,9 @@
 #include "threads/synch.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "userprog/syscall.h"
+
+#include "threads/malloc.h"
 
 /* Struct used to share between process_execute() in the
  * invoking thread and start_process() inside the newly invoked
@@ -108,10 +111,7 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
-        struct child_st *cs = palloc_get_page(0);
-        cs->cid = tid;
-        cs->wait = false;
-        list_push_back(&thread_current()->cList, &cs->cElem);
+        // Move to thread.c
       }
     else tid = TID_ERROR;
   }
@@ -135,7 +135,7 @@ start_process (void * execHelper)
   if_.eflags = FLAG_IF | FLAG_MBS;
   exec->success = load (file_name, &if_.eip, &if_.esp);
 
-  sema_up(&exec->sema);
+  if(exec->success) sema_up(&exec->sema);
   /* If load failed, quit. */
   //palloc_free_page (file_name);
   if (!(exec->success))
@@ -163,37 +163,32 @@ start_process (void * execHelper)
 int
 process_wait (tid_t child_tid) 
 {
-  //printf("creating variables\n");
   struct thread *p = thread_current();
   struct list_elem *e = NULL;
   struct child_st *c = NULL;
   
-  //printf("entering loop\n");
   for(e = list_begin(&p->cList); e != list_end(&p->cList); e = list_next(e))
     {
       struct child_st * curr = list_entry(e, struct child_st, cElem);
-      if (child_tid == curr->cid) 
+      if (child_tid == curr->cid)
+      { 
         c = curr;
+        break;
+      }
     }
   
-  //printf("checking tid\n");
   if(child_tid == TID_ERROR /* tid is invalid */
      || c == NULL           /* not a child of calling process */
      || c->wait)            /* already had wait called */
     return -1;
   
-  return -1; // stub return until rest of code is done
-  
   c->wait = true;
-
-  //while(child is alive) //waits for child to die
+  while (!c->exit) barrier();
+  int status = c->status;
+  list_remove(&c->cElem);
+  palloc_free_page(c);
   
-  c->wait = false;
-  //if(child terminated by kernel)
-    //return -1;
-  //else 
-    //return exit status of child
-  
+  return status;
 }
 
 /* Free the current process's resources. */
@@ -202,6 +197,8 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  if (get_thread(cur->parent)) cur->cp->exit = true;
 
   file_close(cur->exec_file);
   /* Destroy the current process's page directory and switch back
@@ -325,9 +322,8 @@ load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file nam
   bool success = false;
   char* charPointer = NULL;                  //##Add this for parsing!
   int i = 0;
-  
-  char cmd_line_cpy[CMD_MAX];
-  strlcpy(cmd_line_cpy, cmd_line, CMD_MAX);
+  char cmd_line_cpy[strlen(cmd_line)+1];
+  strlcpy(cmd_line_cpy, cmd_line, strlen(cmd_line)+1);
   strlcpy(file_name, strtok_r(cmd_line_cpy, " ", &charPointer), NAME_MAX + 2);
 
 
@@ -584,8 +580,8 @@ static bool setup_stack_helper (const char * cmd_line, uint8_t * kpage, uint8_t 
   //##Probably need some other variables here as well...
   
   /* strtok modifies input string. Create copy to take the hit */
-  char cmd_line_cpy[CMD_MAX];
-  strlcpy(cmd_line_cpy, cmd_line, CMD_MAX);
+  char cmd_line_cpy[strlen(cmd_line)+1];
+  strlcpy(cmd_line_cpy, cmd_line, strlen(cmd_line)+1);
   
   //##Parse and put in command line arguments,
   i = 0;

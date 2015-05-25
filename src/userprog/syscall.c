@@ -126,6 +126,10 @@ exit(int status)
 {
   struct thread *cur = thread_current();
   printf("%s: exit(%d)\n", cur->name, status);
+  
+  /* store exit status 
+   * marked as dead in thread_exit()*/
+  if (cur->ex != NULL) cur->ex->status = status;
 
   // Close all fd in fList
   struct list_elem *e;

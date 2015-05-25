@@ -107,6 +107,8 @@ struct thread
     struct list fList;                  /* File list */
     struct list cList;                  /* Child list */
 
+    struct file *exec_file;             // To close in process_exit
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     

@@ -310,6 +310,8 @@ thread_exit (void)
      when it calls thread_schedule_tail(). */
   intr_disable ();
   list_remove (&thread_current()->allelem);
+  //if (NULL != thread_current()->ex)
+  //  thread_current ()->ex->alive = false; //marked as dead
   thread_current ()->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();
@@ -484,6 +486,7 @@ init_thread (struct thread *t, const char *name, int priority)
   // Initialize list and new variables 
   t->parent = 0;
   t->cp = NULL; 
+
   list_init(&t->fList);
   list_init(&t->cList);
   

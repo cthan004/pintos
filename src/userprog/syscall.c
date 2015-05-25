@@ -135,7 +135,15 @@ exit(int status)
     close(list_entry(e, struct file_st, fElem)->fd);
   }
 
-  // HERE: remove all childs in cList
+  // Remove all childs in cList
+  struct child_st *c;
+  while(!list_empty(&cur->cList))
+  {
+    e = list_begin(&cur->cList);
+    c = list_entry(e, struct child_st, cElem);
+    list_remove(&c->cElem);
+    palloc_free_page(c);
+  }
 
   thread_exit();
 }

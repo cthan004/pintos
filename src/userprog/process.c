@@ -168,19 +168,19 @@ process_wait (tid_t child_tid UNUSED)
   
   /* everythign past this point in this function needs to be debugged */
 
-  printf("creating variables\n");
+  //printf("creating variables\n");
   struct thread *p = thread_current();
   struct list_elem *e = NULL;
   struct child_st * c = NULL;
   
-  printf("entering loop\n");
+  //printf("entering loop\n");
   for(e = list_begin(&p->cList); e != list_end(&p->cList); e = list_next(e))
     {
       struct child_st * curr = list_entry(e, struct child_st, cElem);
       if (child_tid == curr->cid) c = curr;
     }
   
-  printf("checking tid\n");
+  //printf("checking tid\n");
   if(child_tid == TID_ERROR /* tid is invalid */
      || c == NULL           /* not a child of calling process */
      || c->wait)            /* already had wait called */

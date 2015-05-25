@@ -164,20 +164,33 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
   //while(1);
-  return -1; //DO NOT REMOVE THIS. Causes page fault removed
+  //return -1; //DO NOT REMOVE THIS. Causes page fault removed
   
-  /* everythign past this point in this function needs to be debugged */
+  /* everything past this point in this function needs to be debugged */
 
   printf("creating variables\n");
   struct thread *p = thread_current();
   struct list_elem *e = NULL;
-  struct child_st * c = NULL;
+  struct child_st *c = NULL;
   
   printf("entering loop\n");
+  printf("list end = %x\n", list_end(&p->cList));
   for(e = list_begin(&p->cList); e != list_end(&p->cList); e = list_next(e))
     {
       struct child_st * curr = list_entry(e, struct child_st, cElem);
-      if (child_tid == curr->cid) c = curr;
+      ASSERT(curr != NULL);
+      printf("curr = %x\n", curr);
+      printf("*curr = %x\n", *curr);
+
+      if (curr != NULL) printf("curr->CID: %x\n", curr->cid);
+      else printf("null\n");
+      printf("checking for child. p = %i\n", p->tid);
+      if (/*curr != NULL && */child_tid == curr->cid) 
+          {
+            printf("got child. parent: %i\n", p->tid);
+            c = curr;
+          }
+      printf("end loop. e = %x\n", e);
     }
   
   printf("checking tid\n");
@@ -186,6 +199,7 @@ process_wait (tid_t child_tid UNUSED)
      || c->wait)            /* already had wait called */
     return -1;
   
+  printf("stub\n");
   return -1; // stub return until rest of code is done
   
   //while(child is alive) //waits for child to die

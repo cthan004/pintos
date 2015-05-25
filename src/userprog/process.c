@@ -163,10 +163,12 @@ start_process (void * execHelper)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  //printf("creating variables\n");
   struct thread *p = thread_current();
   struct list_elem *e = NULL;
   struct child_st *c = NULL;
   
+  //printf("entering loop\n");
   for(e = list_begin(&p->cList); e != list_end(&p->cList); e = list_next(e))
     {
       struct child_st * curr = list_entry(e, struct child_st, cElem);
@@ -174,6 +176,7 @@ process_wait (tid_t child_tid UNUSED)
         c = curr;
     }
   
+  //printf("checking tid\n");
   if(child_tid == TID_ERROR /* tid is invalid */
      || c == NULL           /* not a child of calling process */
      || c->wait)            /* already had wait called */

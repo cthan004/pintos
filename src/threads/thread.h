@@ -95,6 +95,12 @@ struct child_st
   struct list_elem cElem;
 };
 
+struct exit_st
+{
+  bool alive;
+  int status;
+}
+
 struct thread
   {
     /* Owned by thread.c. */

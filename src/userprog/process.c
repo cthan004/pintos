@@ -111,10 +111,10 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
-        palloc_free_page(exec.file_name);
       }
     else tid = TID_ERROR;
   }
+  palloc_free_page(exec.file_name);
   
   return tid;
 } 

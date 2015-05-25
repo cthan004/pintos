@@ -21,8 +21,6 @@
 #include "threads/vaddr.h"
 #include "userprog/syscall.h"
 
-#include "threads/malloc.h"
-
 /* Struct used to share between process_execute() in the
  * invoking thread and start_process() inside the newly invoked
  * thread. */
@@ -181,10 +179,13 @@ process_wait (tid_t child_tid)
      || c == NULL           /* not a child of calling process */
      || c->wait)            /* already had wait called */
     return -1;
-  
+ 
+  // If we are here, we wait. Set wait to true 
   c->wait = true;
+  // Wait till exit
   while (!c->exit) barrier();
   int status = c->status;
+  // Free child
   list_remove(&c->cElem);
   palloc_free_page(c);
   
@@ -199,7 +200,7 @@ process_exit (void)
   uint32_t *pd;
 
   if (get_thread(cur->parent)) cur->cp->exit = true;
-
+  // Close file
   file_close(cur->exec_file);
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

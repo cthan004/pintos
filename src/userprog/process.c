@@ -108,10 +108,10 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
-        struct child_st cs;
-        cs.cid = tid;
-        cs.wait = false;
-        list_push_back(&thread_current()->cList, &cs.cElem);
+        struct child_st *cs = palloc_get_page(0);
+        cs->cid = tid;
+        cs->wait = false;
+        list_push_back(&thread_current()->cList, &cs->cElem);
       }
     else tid = TID_ERROR;
   }
@@ -164,7 +164,7 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
   //while(1);
-  return -1; //DO NOT REMOVE THIS. Causes page fault removed
+  //return -1; //DO NOT REMOVE THIS. Causes page fault removed
   
   /* everythign past this point in this function needs to be debugged */
 

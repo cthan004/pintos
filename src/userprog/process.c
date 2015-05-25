@@ -108,10 +108,10 @@ process_execute (const char *file_name)
           thread's children (mind your list_elems)... we need to check this 
           list in process wait, when children are done, process wait can 
           finish... see process wait... */
-        struct child_st cs;
-        cs.cid = tid;
-        cs.wait = false;
-        list_push_back(&thread_current()->cList, &cs.cElem);
+        struct child_st *cs = palloc_get_page(0);
+        cs->cid = tid;
+        cs->wait = false;
+        list_push_back(&thread_current()->cList, &cs->cElem);
       }
     else tid = TID_ERROR;
   }
@@ -218,6 +218,7 @@ process_exit (void)
   struct thread *cur = thread_current ();
   uint32_t *pd;
 
+  file_close(cur->exec_file);
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
@@ -353,7 +354,7 @@ load (const char *cmd_line, void (**eip) (void), void **esp) //##Change file nam
   
   /* Open executable file. */
   file = filesys_open (file_name);  //## Set the thread's bin file to this
-                                    //as well! It is super helpful to have
+  t->exec_file = file;              //as well! It is super helpful to have
                                     // each thread have a pointer to the 
                                     // file they are using for when you 
                                     // need to close it in process_exit

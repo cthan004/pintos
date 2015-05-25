@@ -126,6 +126,17 @@ exit(int status)
 {
   struct thread *cur = thread_current();
   printf("%s: exit(%d)\n", cur->name, status);
+
+  // Close all fd in fList
+  struct list_elem *e;
+  while(!list_empty(&cur->fList))
+  {
+    e = list_begin(&cur->fList);
+    close(list_entry(e, struct file_st, fElem)->fd);
+  }
+
+  // HERE: remove all childs in cList
+
   thread_exit();
 }
 

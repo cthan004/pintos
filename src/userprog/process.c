@@ -161,13 +161,16 @@ start_process (void * execHelper)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid) 
+process_wait (tid_t child_tid UNUSED) 
 {
+  //while(1);
+  return -1; //DO NOT REMOVE THIS. Causes infinite loop if removed
+  
   struct thread *p = thread_current();
   struct list_elem *e = NULL;
   struct child_st * c = NULL;
 
-  for(e = list_begin(p->cList); e != list_end(p->cList); e = list_next(p->cList))
+  for(e = list_begin(&p->cList); e != list_end(&p->cList); e = list_next(&p->cList))
     {
       struct child_st * curr = list_entry(e, struct child_st, cElem);
       if (child_tid == curr->cid) c = curr;

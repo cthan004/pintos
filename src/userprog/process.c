@@ -112,10 +112,10 @@ process_execute (const char *file_name)
         cs->cid = tid;
         cs->wait = false;
         list_push_back(&thread_current()->cList, &cs->cElem);
-        struct exit_st ex; //may need to palloc
-        ex.alive = true;
-        ex.status = 0;     //might be better to initialize to -1
-        get_thread(tid)->ex = &ex;
+        //struct exit_st ex; //may need to palloc
+        //ex.alive = true;
+        //ex.status = 0;     //might be better to initialize to -1
+        //get_thread(tid)->ex = &ex;
       }
     else tid = TID_ERROR;
   }

@@ -114,7 +114,7 @@ struct thread
     struct list cList;                  /* Child list */
 
     struct file *exec_file;             /* To close in process_exit */
-    struct exit_st *ex;                 /* records the exit status of this thread*/
+    //struct exit_st *ex;                 /* records the exit status of this thread*/
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */

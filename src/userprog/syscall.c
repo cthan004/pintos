@@ -129,7 +129,7 @@ exit(int status)
   
   /* store exit status 
    * marked as dead in thread_exit()*/
-  if (cur->ex != NULL) cur->ex->status = status;
+  //if (cur->ex != NULL) cur->ex->status = status;
 
   // Close all fd in fList
   struct list_elem *e;
